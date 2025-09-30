@@ -1,0 +1,333 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider          = "mysql"
+  url               = env("DATABASE_URL")
+  shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
+}
+
+/* ===================== USERS ===================== */
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  name      String
+  password  String
+  phone     String?
+  role      UserRole @default(USER)
+
+  // All listings created by this user
+  listings  Listing[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+/* ===================== UNIFIED LISTING ===================== */
+
+model Listing {
+  id          String   @id @default(uuid())
+  title       String
+  description String? 
+  price       Float
+  currency    Currency @default(AOA)
+  status      ListingStatus @default(ACTIVE)
+
+  // Location (shared)
+  province     String?
+  municipality String?
+  neighborhood String?
+
+  // Media (use Json arrays for images; string for single video URL)
+  images   Json
+  videoUrl String?
+
+  // Category selector: LAND | CAR | HOUSE | MACHINE
+  category ListingCategory
+
+  // Owner
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // 1:1 optional relations to category-specific detail tables
+  landDetails    LandDetails?
+  carDetails     CarDetails?
+  houseDetails   HouseDetails?
+  machineDetails MachineDetails?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // ---------- Indexes ----------
+
+  // Feed & status filters by category, newest first
+  @@index([category, status, createdAt(sort: Desc)], name: "idx_listing_cat_status_createdAt")
+
+  // Price sorting/filtering within a category
+  @@index([category, price], name: "idx_listing_cat_price")
+
+  // Common search by location granularity
+  @@index([province, municipality, neighborhood], name: "idx_listing_location")
+
+  // User profile: "my listings"
+  @@index([userId, createdAt(sort: Desc)], name: "idx_listing_user_createdAt")
+
+  // General status views
+  @@index([status, createdAt(sort: Desc)], name: "idx_listing_status_createdAt")
+
+  // Global price filters
+  @@index([price], name: "idx_listing_price")
+
+  // Full-text search on title & description
+  @@fulltext([title, description], map: "ft_listing_title_desc")
+}
+
+/* ===================== CATEGORY-SPECIFIC TABLES ===================== */
+
+/* ---- LAND ---- */
+model LandDetails {
+  listingId String  @id
+  listing   Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  // Core
+  totalArea  Float
+  areaUnit   AreaUnit     @default(SQUARE_METERS)
+  topography Topography?
+  distanceFromMainRoad Float?
+  isDemarcated Boolean?
+  documentType DocumentType?
+
+  // Subcategory selector
+  landPurpose LandPurpose
+
+  // ---- Agricultural ----
+  waterSource          String?
+  hasIrrigationSystem  Boolean?
+  soilType             SoilType?
+  soilTested           Boolean?
+  previousUse          String?
+  agriculturalSupport  String?
+  climateInfo          String?
+
+  // ---- Residential/Commercial ----
+  zoningType        ZoningType?
+  electricityAccess UtilityAccess?
+  waterAccess       UtilityAccess?
+  sanitationAccess  UtilityAccess?
+  securityInfo      String?
+}
+
+/* ---- CAR ---- */
+model CarDetails {
+  listingId String  @id
+  listing   Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  make             String
+  model            String
+  trimLevel        String?
+  manufactureYear  Int?
+  registrationYear Int?
+  mileage          Float?
+  fuelType         FuelType
+  transmission     Transmission
+  condition        VehicleCondition
+  color            String?
+  interiorType     InteriorType?
+  vehicleOrigin    VehicleOrigin?
+  customsStatus    CustomsStatus
+  serviceHistory   Boolean?
+  reasonForSelling String?
+
+  features Json
+}
+
+/* ---- HOUSE ---- */
+model HouseDetails {
+  listingId String  @id
+  listing   Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  houseType            HouseType
+  plotSize             Float?
+  livingArea           Float
+  bedrooms             Int
+  bathrooms            Int
+  constructionQuality  ConstructionQuality
+
+  // Utilities
+  waterSource  WaterSource?
+  hasWaterTank Boolean?
+  hasGenerator Boolean?
+  hasInverter  Boolean?
+
+  // Features
+  securityFeatures Json
+  interiorFeatures Json
+  exteriorFeatures Json
+
+  // Distances
+  distanceToCityCenter   Float?
+  distanceToSchools      Float?
+  distanceToHospitals    Float?
+  distanceToSupermarkets Float?
+}
+
+/* ---- MACHINE ---- */
+model MachineDetails {
+  listingId String  @id
+  listing   Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  machineType           String
+  modelNumber           String?
+  condition             MachineCondition
+  manufactureYear       Int?
+  hoursOfUse            Float?
+  workingCapacity       String?
+  specifications        String?
+  serviceHistory        Boolean?
+  reasonForSale         String?
+  sparePartsAvailability SparePartsAvailability?
+  currentLocation       String?
+}
+
+/* ===================== ENUMS ===================== */
+
+enum ListingCategory {
+  LAND
+  CAR
+  HOUSE
+  MACHINE
+}
+
+enum UserRole {
+  ADMIN
+  USER
+}
+
+enum Currency {
+  AOA
+  USD
+}
+
+enum ListingStatus {
+  ACTIVE
+  SOLD
+  PENDING
+  EXPIRED
+}
+
+enum AreaUnit {
+  SQUARE_METERS
+  HECTARES
+}
+
+enum Topography {
+  FLAT
+  SLOPED
+  HILLY
+}
+
+enum DocumentType {
+  TITLE_DEED
+  SURFACE_RIGHT
+  ASSIGNMENT_CONTRACT
+  LAND_USE_LICENSE
+}
+
+enum LandPurpose {
+  AGRICULTURAL
+  RESIDENTIAL
+  COMMERCIAL
+  MIXED_USE
+}
+
+enum SoilType {
+  SANDY
+  CLAY
+  LOAMY
+}
+
+enum ZoningType {
+  RESIDENTIAL
+  COMMERCIAL
+  INDUSTRIAL
+  MIXED_USE
+}
+
+enum UtilityAccess {
+  CONNECTED
+  NEARBY
+  NOT_AVAILABLE
+  FEASIBLE
+}
+
+enum FuelType {
+  GASOLINE
+  DIESEL
+  HYBRID
+  ELECTRIC
+}
+
+enum Transmission {
+  MANUAL
+  AUTOMATIC
+}
+
+enum VehicleCondition {
+  NEW
+  EXCELLENT
+  GOOD
+  NEEDS_REPAIR
+}
+
+enum InteriorType {
+  LEATHER
+  FABRIC
+}
+
+enum VehicleOrigin {
+  EUROPE
+  ASIA
+  AMERICA
+  AFRICA
+}
+
+enum CustomsStatus {
+  LEGALIZED
+  PENDING
+  NOT_LEGALIZED
+}
+
+enum HouseType {
+  DETACHED
+  TOWNHOUSE
+  VILLA
+  APARTMENT
+}
+
+enum ConstructionQuality {
+  NEW_CONSTRUCTION
+  RECENTLY_RENOVATED
+  GOOD_CONDITION
+  NEEDS_RENOVATION
+}
+
+enum WaterSource {
+  PUBLIC_NETWORK
+  PRIVATE_WELL
+  BOTH
+}
+
+enum MachineCondition {
+  NEW
+  USED
+  RECONDITIONED
+}
+
+enum SparePartsAvailability {
+  EASILY_AVAILABLE
+  AVAILABLE
+  DIFFICULT
+  NOT_AVAILABLE
+}
