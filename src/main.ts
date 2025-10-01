@@ -9,6 +9,9 @@ async function bootstrap() {
       whitelist: true, // Remove extra fields not in DTO
       forbidNonWhitelisted: true, // Throw error if extra fields
       transform: true, // Transform payload to DTO instance
+      transformOptions: {
+        enableImplicitConversion: true, // Allow primitive type conversion
+      }
     }),
   );
   await app.listen(process.env.PORT ?? 3000);

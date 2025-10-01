@@ -11,6 +11,8 @@ import {
   UsePipes,
   ValidationPipe,
   ParseUUIDPipe,
+  HttpCode,
+  HttpStatus,
 } from '@nestjs/common';
 import { CarListingsService } from './car-listings.service';
 import { CreateCarListingDto } from './dto/create-car-listing.dto';
@@ -23,41 +25,74 @@ export class CarListingsController {
 
   @Post()
   @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
-  create(@Body() createCarListingDto: CreateCarListingDto) {
-    return this.carListingsService.create(createCarListingDto);
+  async create(@Body() createCarListingDto: CreateCarListingDto) {
+    const car = await this.carListingsService.create(createCarListingDto);
+    return {
+      message: 'Car listing created successfully!',
+      data: car,
+    };
   }
 
   @Get()
-  findAll(@Query() filters: CarListingFiltersDto) {
-    return this.carListingsService.findAll(filters);
+  async findAll(@Query() filters: CarListingFiltersDto) {
+    const cars = await this.carListingsService.findAll(filters);
+
+    if (cars.listings.length === 0) {
+      return {
+        message: 'No listings found for the given search criteria.',
+        data: {
+          listings: [],
+          pagination: cars.pagination,
+        },
+      };
+    }
+
+    return {
+      message: 'Car listings retrieved successfully!',
+      data: cars,
+    };
   }
 
   @Get('makes')
-  getAvailableMakes() {
-    return this.carListingsService.getAvailableMakes();
+  async getAvailableMakes() {
+    const makes = await this.carListingsService.getAvailableMakes();
+    return {
+      message: 'Available car makes retrieved successfully!',
+      data: makes,
+    };
   }
 
-  // @Get('models/:make')
-  // getModelsByMake(@Param('make') make: string) {
-  //   return this.carListingsService.getModelsByMake(make);
-  // }
-
   @Get(':id')
-  findOne(@Param('id', ParseUUIDPipe) id: string) {
-    return this.carListingsService.findOne(id);
+  async findOne(@Param('id', ParseUUIDPipe) id: string) {
+    const car = await this.carListingsService.findOne(id);
+    return {
+      message: 'Car listing retrieved successfully!',
+      data: car,
+    };
   }
 
   @Patch(':id')
   @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
-  update(
+  async update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateCarListingDto: UpdateCarListingDto,
   ) {
-    return this.carListingsService.update(id, updateCarListingDto);
+    const updatedCar = await this.carListingsService.update(
+      id,
+      updateCarListingDto,
+    );
+    return {
+      message: 'Car listing updated successfully!',
+      data: updatedCar,
+    };
   }
 
   @Delete(':id')
-  remove(@Param('id', ParseUUIDPipe) id: string) {
-    return this.carListingsService.remove(id);
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async remove(@Param('id', ParseUUIDPipe) id: string) {
+    await this.carListingsService.remove(id);
+    return {
+      message: 'Car listing deleted successfully!',
+    };
   }
 }

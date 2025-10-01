@@ -11,7 +11,7 @@ export class CarListingsService {
   constructor(private prisma: PrismaService) {}
 
   create(createCarListingDto: CreateCarListingDto) {
-    const {carDetails, ...listingData } = createCarListingDto;
+    const { carDetails, ...listingData } = createCarListingDto;
 
     return this.prisma.listing.create({
       data: {
@@ -26,9 +26,7 @@ export class CarListingsService {
         user: {
           select: {
             id: true,
-            name: true,
-            email: true,
-            phone: true,
+            name: true
           },
         },
       },
@@ -55,6 +53,7 @@ export class CarListingsService {
       minYear,
       maxYear,
       maxMileage,
+      color,
     } = filters || {};
 
     const skip = (page - 1) * limit;
@@ -73,17 +72,15 @@ export class CarListingsService {
     }
 
     // Location filters
-    if (province) where.province = { contains: province, mode: 'insensitive' };
-    if (municipality)
-      where.municipality = { contains: municipality, mode: 'insensitive' };
-    if (neighborhood)
-      where.neighborhood = { contains: neighborhood, mode: 'insensitive' };
+    if (province) where.province = { contains: province };
+    if (municipality) where.municipality = { contains: municipality };
+    if (neighborhood) where.neighborhood = { contains: neighborhood };
 
     // Search in title and description
     if (search) {
       where.OR = [
-        { title: { contains: search, mode: 'insensitive' } },
-        { description: { contains: search, mode: 'insensitive' } },
+        { title: { contains: search } },
+        { description: { contains: search } },
       ];
     }
 
@@ -98,16 +95,17 @@ export class CarListingsService {
       customsStatus ||
       minYear ||
       maxYear ||
+      color||
       maxMileage
     ) {
       where.carDetails = {};
 
-      if (make) where.carDetails.make = { contains: make, mode: 'insensitive' };
-      if (model)
-        where.carDetails.model = { contains: model, mode: 'insensitive' };
+      if (make) where.carDetails.make = { contains: make };
+      if (model) where.carDetails.model = { contains: model };
       if (fuelType) where.carDetails.fuelType = fuelType;
       if (transmission) where.carDetails.transmission = transmission;
       if (condition) where.carDetails.condition = condition;
+      if(color) where.carDetails.color = { contains: color };
       if (vehicleOrigin) where.carDetails.vehicleOrigin = vehicleOrigin;
       if (customsStatus) where.carDetails.customsStatus = customsStatus;
 
@@ -135,8 +133,6 @@ export class CarListingsService {
             select: {
               id: true,
               name: true,
-              email: true,
-              phone: true,
             },
           },
         },
@@ -170,8 +166,7 @@ export class CarListingsService {
           select: {
             id: true,
             name: true,
-            email: true,
-            phone: true,
+         
           },
         },
       },

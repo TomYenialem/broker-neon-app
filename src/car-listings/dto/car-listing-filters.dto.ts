@@ -1,5 +1,5 @@
 // src/car-listings/dto/car-listing-filters.dto.ts
-import { IsOptional, IsNumber, IsString, IsEnum, Min } from 'class-validator';
+import { IsOptional, IsNumber, IsString, IsEnum, Min, isString } from 'class-validator';
 import { Type } from 'class-transformer';
 import {
   FuelType,
@@ -39,6 +39,10 @@ export class CarListingFiltersDto {
   @IsOptional()
   @IsString({ message: 'Province must be a string' })
   province?: string;
+
+  @IsOptional()
+  @IsString({ message: 'color must be a string' })
+  color?: string;
 
   @IsOptional()
   @IsString({ message: 'Municipality must be a string' })
