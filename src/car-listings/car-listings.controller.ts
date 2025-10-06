@@ -22,6 +22,7 @@ import {
   ApiBearerAuth,
   ApiParam,
   ApiConsumes,
+  ApiBody,
 } from '@nestjs/swagger';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { CarListingsService } from './car-listings.service';
@@ -46,9 +47,173 @@ export class CarListingsController {
   @ApiBearerAuth('JWT-auth')
   @UseInterceptors(FilesInterceptor('files', 15))
   @ApiConsumes('multipart/form-data', 'application/json')
-  @ApiOperation({ summary: 'Create car listing (ADMIN only)' })
-  @ApiResponse({ status: 201, description: 'Car created' })
-  @ApiResponse({ status: 403, description: 'Forbidden' })
+  @ApiOperation({
+    summary: 'Create car listing (ADMIN only)',
+    description:
+      'Create car listing with JSON or form-data. Files optional. Supports multiple images and videos.',
+  })
+  @ApiBody({
+    description: 'Car listing data - JSON or form-data',
+    schema: {
+      type: 'object',
+      required: ['title', 'price', 'carDetails'],
+      properties: {
+        title: { type: 'string', example: 'Toyota Corolla 2020' },
+        description: { type: 'string', example: 'Excellent condition' },
+        price: { type: 'number', example: 8000000 },
+        currency: { type: 'string', enum: ['AOA', 'USD'], default: 'AOA' },
+        province: { type: 'string', example: 'Luanda' },
+        userId: { type: 'string', example: 'user-id-optional' },
+        carDetails: {
+          type: 'object',
+          description: `
+Car details object with required and optional fields:
+
+REQUIRED FIELDS:
+- make (string): Car manufacturer (e.g., Toyota, Honda)
+- model (string): Car model (e.g., Corolla, Civic)
+- fuelType (enum): GASOLINE, DIESEL, HYBRID, ELECTRIC
+- transmission (enum): MANUAL, AUTOMATIC
+- condition (enum): NEW, EXCELLENT, GOOD, NEEDS_REPAIR
+- customsStatus (enum): LEGALIZED, PENDING, NOT_LEGALIZED - Critical in Angola!
+- features (array of strings): Can be empty []
+
+OPTIONAL FIELDS:
+- trimLevel (string): e.g., XLE, Sport
+- manufactureYear (number): e.g., 2020
+- registrationYear (number): e.g., 2020
+- mileage (number): Kilometers
+- color (string): e.g., White, Black
+- interiorType (enum): LEATHER, FABRIC
+- vehicleOrigin (enum): EUROPE, ASIA, AMERICA, AFRICA
+- serviceHistory (boolean)
+- reasonForSelling (string)`,
+          required: [
+            'make',
+            'model',
+            'fuelType',
+            'transmission',
+            'condition',
+            'customsStatus',
+            'features',
+          ],
+          properties: {
+            make: {
+              type: 'string',
+              example: 'Toyota',
+              description: 'Car manufacturer (Required)',
+            },
+            model: {
+              type: 'string',
+              example: 'Corolla',
+              description: 'Car model (Required)',
+            },
+            trimLevel: {
+              type: 'string',
+              example: 'XLE',
+              description: 'Optional',
+            },
+            manufactureYear: {
+              type: 'number',
+              example: 2020,
+              description: 'Optional',
+            },
+            registrationYear: {
+              type: 'number',
+              example: 2020,
+              description: 'Optional',
+            },
+            mileage: {
+              type: 'number',
+              example: 45000,
+              description: 'Kilometers (Optional)',
+            },
+            fuelType: {
+              type: 'string',
+              enum: ['GASOLINE', 'DIESEL', 'HYBRID', 'ELECTRIC'],
+              example: 'GASOLINE',
+              description: 'Required',
+            },
+            transmission: {
+              type: 'string',
+              enum: ['MANUAL', 'AUTOMATIC'],
+              example: 'AUTOMATIC',
+              description: 'Required',
+            },
+            condition: {
+              type: 'string',
+              enum: ['NEW', 'EXCELLENT', 'GOOD', 'NEEDS_REPAIR'],
+              example: 'EXCELLENT',
+              description: 'Required',
+            },
+            color: {
+              type: 'string',
+              example: 'White',
+              description: 'Optional',
+            },
+            interiorType: {
+              type: 'string',
+              enum: ['LEATHER', 'FABRIC'],
+              example: 'LEATHER',
+              description: 'Optional',
+            },
+            vehicleOrigin: {
+              type: 'string',
+              enum: ['EUROPE', 'ASIA', 'AMERICA', 'AFRICA'],
+              example: 'EUROPE',
+              description: 'Optional',
+            },
+            customsStatus: {
+              type: 'string',
+              enum: ['LEGALIZED', 'PENDING', 'NOT_LEGALIZED'],
+              example: 'LEGALIZED',
+              description: 'Required - Critical in Angola',
+            },
+            serviceHistory: {
+              type: 'boolean',
+              example: true,
+              description: 'Optional',
+            },
+            reasonForSelling: {
+              type: 'string',
+              example: 'Upgrading',
+              description: 'Optional',
+            },
+            features: {
+              type: 'array',
+              items: { type: 'string' },
+              example: ['4x4', 'AC', 'Cruise Control', 'Sunroof'],
+              description: 'Required - Can be empty array',
+            },
+          },
+        },
+        files: {
+          type: 'array',
+          items: { type: 'string', format: 'binary' },
+          description: 'Optional - Upload images/videos',
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Car created',
+    schema: {
+      example: {
+        message: 'Car created with files!',
+        data: {
+          id: 'uuid',
+          title: 'Toyota Corolla 2020',
+          price: 8000000,
+          images: ['/uploads/car/uuid/img.jpg'],
+          videos: ['/uploads/car/uuid/video.mp4'],
+        },
+      },
+    },
+  })
+  @ApiResponse({ status: 400, description: 'Bad Request - Missing fields' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden - Requires ADMIN' })
   async create(
     @Body() body: any,
     @UploadedFiles() files?: Express.Multer.File[],
@@ -142,7 +307,28 @@ export class CarListingsController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Update car (ADMIN only)' })
+  @ApiOperation({
+    summary: 'Update car (ADMIN only)',
+    description: 'Update car listing. Only send fields you want to change.',
+  })
+  @ApiParam({ name: 'id', description: 'Car listing UUID' })
+  @ApiBody({
+    description: 'Fields to update (all optional)',
+    schema: {
+      type: 'object',
+      example: {
+        price: 7500000,
+        status: 'SOLD',
+        description: 'VENDIDO! Price was 8M',
+      },
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Updated',
+    schema: { example: { message: 'Car updated', data: {} } },
+  })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
   update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateCarListingDto,
@@ -156,6 +342,19 @@ export class CarListingsController {
   @ApiBearerAuth('JWT-auth')
   @UseInterceptors(FilesInterceptor('files', 15))
   @ApiConsumes('multipart/form-data')
+  @ApiOperation({
+    summary: 'Add media (ADMIN only)',
+    description:
+      '📸 Adds images/videos to car. Requires: ADMIN token, files in form-data. Keeps existing media.',
+  })
+  @ApiParam({ name: 'id', description: 'Car listing UUID' })
+  @ApiResponse({
+    status: 200,
+    description: 'Media added',
+    schema: {
+      example: { message: 'Media added', imagesAdded: 2, videosAdded: 1 },
+    },
+  })
   async addMedia(
     @Param('id') id: string,
     @UploadedFiles() files: Express.Multer.File[],
@@ -187,6 +386,17 @@ export class CarListingsController {
   @ApiBearerAuth('JWT-auth')
   @UseInterceptors(FilesInterceptor('files', 15))
   @ApiConsumes('multipart/form-data')
+  @ApiOperation({
+    summary: 'Replace all media (ADMIN only)',
+    description:
+      '🔄 DELETES all media, uploads new. Requires: ADMIN token, new files. ⚠️ Warning: Deletes existing!',
+  })
+  @ApiResponse({
+    status: 200,
+    schema: {
+      example: { message: 'Media replaced', totalImages: 3, totalVideos: 1 },
+    },
+  })
   async replaceMedia(
     @Param('id') id: string,
     @UploadedFiles() files: Express.Multer.File[],
@@ -212,6 +422,16 @@ export class CarListingsController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
   @ApiBearerAuth('JWT-auth')
+  @ApiOperation({
+    summary: 'Delete one file (ADMIN only)',
+    description:
+      '🗑️ Deletes ONE file. Requires: filename only (NOT full path). Example: 1696400000-uuid.jpg',
+  })
+  @ApiParam({ name: 'filename', example: '1696400000-uuid.jpg' })
+  @ApiResponse({
+    status: 200,
+    schema: { example: { message: 'Image deleted', type: 'image' } },
+  })
   async deleteMedia(
     @Param('id') id: string,
     @Param('filename') filename: string,

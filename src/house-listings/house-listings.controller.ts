@@ -111,28 +111,138 @@ export class HouseListingsController {
           description: 'Optional - Owner of the listing',
         },
         houseDetails: {
-          type: 'string',
-          description:
-            'House details as JSON string (for form-data) or object (for JSON)',
-          example: JSON.stringify({
-            houseType: 'DETACHED',
-            plotSize: 600,
-            livingArea: 350,
-            bedrooms: 4,
-            bathrooms: 3,
-            constructionQuality: 'NEW_CONSTRUCTION',
-            waterSource: 'PUBLIC_NETWORK',
-            hasWaterTank: true,
-            hasGenerator: true,
-            hasInverter: true,
-            securityFeatures: ['Electric fence', 'CCTV', 'Security guard'],
-            interiorFeatures: ['Kitchen', 'AC', 'Wardrobes'],
-            exteriorFeatures: ['Pool', 'Garden', 'Garage'],
-            distanceToCityCenter: 15,
-            distanceToSchools: 2,
-            distanceToHospitals: 5,
-            distanceToSupermarkets: 1,
-          }),
+          type: 'object',
+          description: `
+House details object with required and optional fields:
+
+REQUIRED FIELDS:
+- houseType (enum): DETACHED, TOWNHOUSE, VILLA, APARTMENT
+- livingArea (number): Square meters
+- bedrooms (number): Number of bedrooms
+- bathrooms (number): Number of bathrooms
+- constructionQuality (enum): NEW_CONSTRUCTION, RECENTLY_RENOVATED, GOOD_CONDITION, NEEDS_RENOVATION
+- securityFeatures (array of strings): Can be empty []
+- interiorFeatures (array of strings): Can be empty []
+- exteriorFeatures (array of strings): Can be empty []
+
+OPTIONAL FIELDS:
+- plotSize (number): Square meters
+- waterSource (enum): PUBLIC_NETWORK, PRIVATE_WELL, BOTH
+- hasWaterTank (boolean)
+- hasGenerator (boolean) - Critical in Angola
+- hasInverter (boolean)
+- distanceToCityCenter (number): Kilometers
+- distanceToSchools (number): Kilometers
+- distanceToHospitals (number): Kilometers
+- distanceToSupermarkets (number): Kilometers`,
+          required: [
+            'houseType',
+            'livingArea',
+            'bedrooms',
+            'bathrooms',
+            'constructionQuality',
+            'securityFeatures',
+            'interiorFeatures',
+            'exteriorFeatures',
+          ],
+          properties: {
+            houseType: {
+              type: 'string',
+              enum: ['DETACHED', 'TOWNHOUSE', 'VILLA', 'APARTMENT'],
+              example: 'DETACHED',
+              description: 'Required',
+            },
+            plotSize: {
+              type: 'number',
+              example: 600,
+              description: 'Square meters (Optional)',
+            },
+            livingArea: {
+              type: 'number',
+              example: 350,
+              description: 'Square meters (Required)',
+            },
+            bedrooms: { type: 'number', example: 4, description: 'Required' },
+            bathrooms: { type: 'number', example: 3, description: 'Required' },
+            constructionQuality: {
+              type: 'string',
+              enum: [
+                'NEW_CONSTRUCTION',
+                'RECENTLY_RENOVATED',
+                'GOOD_CONDITION',
+                'NEEDS_RENOVATION',
+              ],
+              example: 'NEW_CONSTRUCTION',
+              description: 'Required',
+            },
+            waterSource: {
+              type: 'string',
+              enum: ['PUBLIC_NETWORK', 'PRIVATE_WELL', 'BOTH'],
+              example: 'PUBLIC_NETWORK',
+              description: 'Optional',
+            },
+            hasWaterTank: {
+              type: 'boolean',
+              example: true,
+              description: 'Optional',
+            },
+            hasGenerator: {
+              type: 'boolean',
+              example: true,
+              description: 'Optional - Critical in Angola',
+            },
+            hasInverter: {
+              type: 'boolean',
+              example: true,
+              description: 'Optional',
+            },
+            securityFeatures: {
+              type: 'array',
+              items: { type: 'string' },
+              example: [
+                'Electric fence',
+                'CCTV cameras',
+                'Security guard 24/7',
+              ],
+              description: 'Required - Can be empty array',
+            },
+            interiorFeatures: {
+              type: 'array',
+              items: { type: 'string' },
+              example: [
+                'Equipped kitchen',
+                'AC all rooms',
+                'Built-in wardrobes',
+              ],
+              description: 'Required - Can be empty array',
+            },
+            exteriorFeatures: {
+              type: 'array',
+              items: { type: 'string' },
+              example: ['Swimming pool', 'Garden', 'Garage for 2 cars'],
+              description: 'Required - Can be empty array',
+            },
+            distanceToCityCenter: {
+              type: 'number',
+              example: 15,
+              description: 'Kilometers (Optional)',
+            },
+            distanceToSchools: {
+              type: 'number',
+              example: 2,
+              description: 'Kilometers (Optional)',
+            },
+            distanceToHospitals: {
+              type: 'number',
+              example: 5,
+              description: 'Kilometers (Optional)',
+            },
+            distanceToSupermarkets: {
+              type: 'number',
+              example: 0.8,
+              description: 'Kilometers (Optional)',
+            },
+          },
         },
         files: {
           type: 'array',
@@ -357,14 +467,58 @@ export class HouseListingsController {
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({
     summary: 'Update house listing (ADMIN only)',
-    description: 'Update an existing house listing. Requires ADMIN role.',
+    description:
+      'Update an existing house listing. Only include fields you want to change. Requires ADMIN role.',
   })
   @ApiParam({ name: 'id', description: 'House listing UUID' })
+  @ApiBody({
+    description:
+      'Fields to update (all optional - only send what you want to change)',
+    schema: {
+      type: 'object',
+      properties: {
+        title: {
+          type: 'string',
+          example: 'Updated Title - Moradia T4 Renovada',
+        },
+        description: {
+          type: 'string',
+          example: 'Price reduced! Recently renovated',
+        },
+        price: { type: 'number', example: 80000000 },
+        currency: { type: 'string', enum: ['AOA', 'USD'] },
+        status: {
+          type: 'string',
+          enum: ['ACTIVE', 'SOLD', 'PENDING', 'EXPIRED'],
+          example: 'SOLD',
+        },
+        province: { type: 'string' },
+        municipality: { type: 'string' },
+        neighborhood: { type: 'string' },
+      },
+      example: {
+        title: 'VENDIDA - Moradia T4 com Piscina',
+        status: 'SOLD',
+        price: 80000000,
+      },
+    },
+  })
   @ApiResponse({
     status: 200,
     description: 'House listing updated successfully',
+    schema: {
+      example: {
+        id: 'uuid',
+        title: 'VENDIDA - Moradia T4 com Piscina',
+        price: 80000000,
+        status: 'SOLD',
+        updatedAt: '2025-10-07T00:30:00.000Z',
+      },
+    },
   })
+  @ApiResponse({ status: 400, description: 'Bad Request' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden - Requires ADMIN' })
   @ApiResponse({ status: 404, description: 'House listing not found' })
   update(
     @Param('id') id: string,
@@ -381,24 +535,48 @@ export class HouseListingsController {
   @ApiConsumes('multipart/form-data')
   @ApiOperation({
     summary: 'Add media to listing (ADMIN only)',
-    description:
-      'Add new images and/or videos to existing listing. Keeps existing media. Server automatically separates images from videos.',
+    description: `
+📸 What it does: Adds new images/videos to existing listing WITHOUT deleting current ones
+
+📋 Requires:
+- ADMIN authentication (Bearer token)
+- Listing ID in URL
+- At least one file (image or video)
+- Files uploaded as "files" in form-data
+
+✅ Result: New files are added, existing files kept
+🎯 Use when: You want to add more photos/videos to an existing listing`,
   })
   @ApiParam({ name: 'id', description: 'House listing UUID' })
   @ApiBody({
+    description: 'Upload files as form-data with key "files"',
     schema: {
       type: 'object',
+      required: ['files'],
       properties: {
         files: {
           type: 'array',
           items: { type: 'string', format: 'binary' },
           description:
-            'Upload images and/or videos (JPG,PNG,WEBP,GIF,MP4,MPEG)',
+            'Upload images (JPG,PNG,WEBP,GIF) and/or videos (MP4,MPEG). Max 15 files.',
         },
       },
     },
   })
-  @ApiResponse({ status: 200, description: 'Media added successfully' })
+  @ApiResponse({
+    status: 200,
+    description: 'Media added successfully',
+    schema: {
+      example: {
+        message: 'Media added successfully',
+        imagesAdded: 2,
+        videosAdded: 1,
+        totalImages: 7,
+        totalVideos: 4,
+      },
+    },
+  })
+  @ApiResponse({ status: 400, description: 'Bad Request - No files provided' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Forbidden - Requires ADMIN role' })
   @ApiResponse({ status: 404, description: 'House listing not found' })
@@ -460,13 +638,25 @@ export class HouseListingsController {
   @ApiConsumes('multipart/form-data')
   @ApiOperation({
     summary: 'Replace all media (ADMIN only)',
-    description:
-      'Delete all existing images and videos, upload new ones. Server automatically separates images from videos.',
+    description: `
+🔄 What it does: DELETES all current images/videos and uploads new ones
+
+📋 Requires:
+- ADMIN authentication (Bearer token)
+- Listing ID in URL
+- At least one new file
+- Files uploaded as "files" in form-data
+
+⚠️ Warning: All existing images and videos will be deleted!
+✅ Result: Listing will have ONLY the newly uploaded files
+🎯 Use when: You want to completely replace all media files`,
   })
   @ApiParam({ name: 'id', description: 'House listing UUID' })
   @ApiBody({
+    description: 'Upload new files that will replace ALL existing media',
     schema: {
       type: 'object',
+      required: ['files'],
       properties: {
         files: {
           type: 'array',
@@ -477,7 +667,20 @@ export class HouseListingsController {
       },
     },
   })
-  @ApiResponse({ status: 200, description: 'Media replaced successfully' })
+  @ApiResponse({
+    status: 200,
+    description: 'All media replaced',
+    schema: {
+      example: {
+        message: 'All media replaced successfully',
+        totalImages: 3,
+        totalVideos: 1,
+        images: ['/uploads/house/uuid/new1.jpg', '...'],
+        videos: ['/uploads/house/uuid/new-video.mp4'],
+      },
+    },
+  })
+  @ApiResponse({ status: 400, description: 'Bad Request - No files provided' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Forbidden - Requires ADMIN role' })
   async replaceMedia(
@@ -525,15 +728,41 @@ export class HouseListingsController {
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({
     summary: 'Delete specific media file (ADMIN only)',
-    description:
-      'Remove a specific image or video from the listing by filename (not full path, just filename).',
+    description: `
+🗑️ What it does: Removes ONE specific image or video file from listing
+
+📋 Requires:
+- ADMIN authentication (Bearer token)
+- Listing ID in URL
+- Filename (NOT full path!) in URL
+
+📌 Important: Use ONLY the filename (e.g., 1696400000-uuid.jpg)
+❌ Wrong: /uploads/house/uuid/1696400000-uuid.jpg
+✅ Correct: 1696400000-uuid.jpg
+
+🎯 Use when: You want to remove just one photo or video, keeping others`,
   })
   @ApiParam({ name: 'id', description: 'House listing UUID' })
   @ApiParam({
     name: 'filename',
-    description: 'Filename only (e.g., 1696400000-uuid.jpg)',
+    description:
+      'Filename only (e.g., 1696400000-uuid.jpg) - NOT the full path!',
+    example: '1696400000-uuid.jpg',
   })
-  @ApiResponse({ status: 200, description: 'Media file deleted successfully' })
+  @ApiResponse({
+    status: 200,
+    description: 'Media file deleted',
+    schema: {
+      example: {
+        message: 'Image deleted successfully',
+        type: 'image',
+        deletedFile: '/uploads/house/uuid/1696400000-uuid.jpg',
+        remainingImages: 5,
+        remainingVideos: 2,
+      },
+    },
+  })
+  @ApiResponse({ status: 400, description: 'Bad Request - File not found' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Forbidden - Requires ADMIN role' })
   @ApiResponse({ status: 404, description: 'Media file not found' })

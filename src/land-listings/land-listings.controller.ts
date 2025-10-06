@@ -21,6 +21,7 @@ import {
   ApiBearerAuth,
   ApiParam,
   ApiConsumes,
+  ApiBody,
 } from '@nestjs/swagger';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { LandListingsService } from './land-listings.service';
@@ -45,9 +46,194 @@ export class LandListingsController {
   @ApiBearerAuth('JWT-auth')
   @UseInterceptors(FilesInterceptor('files', 15))
   @ApiConsumes('multipart/form-data', 'application/json')
-  @ApiOperation({ summary: 'Create land listing (ADMIN only)' })
-  @ApiResponse({ status: 201, description: 'Land created' })
-  @ApiResponse({ status: 403, description: 'Forbidden' })
+  @ApiOperation({
+    summary: 'Create land listing (ADMIN only)',
+    description:
+      'Create land listing with JSON or form-data. Files optional. Supports multiple images and videos.',
+  })
+  @ApiBody({
+    description: 'Land listing data - JSON or form-data',
+    schema: {
+      type: 'object',
+      required: ['title', 'price', 'landDetails'],
+      properties: {
+        title: { type: 'string', example: 'Terreno 5 Hectares, Benguela' },
+        description: { type: 'string', example: 'Terreno plano com água' },
+        price: { type: 'number', example: 5000000 },
+        currency: { type: 'string', enum: ['AOA', 'USD'], default: 'AOA' },
+        province: { type: 'string', example: 'Benguela' },
+        userId: { type: 'string', example: 'user-id-optional' },
+        landDetails: {
+          type: 'object',
+          description: `
+Land details object with required and optional fields:
+
+REQUIRED FIELDS:
+- totalArea (number): Size of land
+- areaUnit (enum): SQUARE_METERS, HECTARES
+- landPurpose (enum): AGRICULTURAL, RESIDENTIAL, COMMERCIAL, MIXED_USE
+
+OPTIONAL FIELDS (General):
+- topography (enum): FLAT, SLOPED, HILLY
+- distanceFromMainRoad (number): Meters
+- isDemarcated (boolean): Boundaries marked?
+- documentType (enum): TITLE_DEED, SURFACE_RIGHT, ASSIGNMENT_CONTRACT, LAND_USE_LICENSE
+
+FOR AGRICULTURAL LAND:
+- waterSource (string): Description of water access
+- hasIrrigationSystem (boolean)
+- soilType (enum): SANDY, CLAY, LOAMY
+- soilTested (boolean)
+- previousUse (string): What was grown before
+- agriculturalSupport (string): Available resources
+- climateInfo (string): Rainfall patterns
+
+FOR RESIDENTIAL/COMMERCIAL:
+- zoningType (enum): RESIDENTIAL, COMMERCIAL, INDUSTRIAL, MIXED_USE
+- electricityAccess (enum): CONNECTED, NEARBY, NOT_AVAILABLE, FEASIBLE
+- waterAccess (enum): CONNECTED, NEARBY, NOT_AVAILABLE, FEASIBLE
+- sanitationAccess (enum): CONNECTED, NEARBY, NOT_AVAILABLE, FEASIBLE
+- securityInfo (string): Security details`,
+          required: ['totalArea', 'areaUnit', 'landPurpose'],
+          properties: {
+            totalArea: {
+              type: 'number',
+              example: 50000,
+              description: 'Required',
+            },
+            areaUnit: {
+              type: 'string',
+              enum: ['SQUARE_METERS', 'HECTARES'],
+              example: 'SQUARE_METERS',
+              description: 'Required',
+            },
+            topography: {
+              type: 'string',
+              enum: ['FLAT', 'SLOPED', 'HILLY'],
+              example: 'FLAT',
+              description: 'Optional',
+            },
+            distanceFromMainRoad: {
+              type: 'number',
+              example: 500,
+              description: 'Meters (Optional)',
+            },
+            isDemarcated: {
+              type: 'boolean',
+              example: true,
+              description: 'Optional',
+            },
+            documentType: {
+              type: 'string',
+              enum: [
+                'TITLE_DEED',
+                'SURFACE_RIGHT',
+                'ASSIGNMENT_CONTRACT',
+                'LAND_USE_LICENSE',
+              ],
+              example: 'TITLE_DEED',
+              description: 'Optional - Critical in Angola',
+            },
+            landPurpose: {
+              type: 'string',
+              enum: ['AGRICULTURAL', 'RESIDENTIAL', 'COMMERCIAL', 'MIXED_USE'],
+              example: 'AGRICULTURAL',
+              description: 'Required',
+            },
+            waterSource: {
+              type: 'string',
+              example: 'Rio nearby (200m)',
+              description: 'Optional - For agricultural',
+            },
+            hasIrrigationSystem: {
+              type: 'boolean',
+              example: false,
+              description: 'Optional',
+            },
+            soilType: {
+              type: 'string',
+              enum: ['SANDY', 'CLAY', 'LOAMY'],
+              example: 'LOAMY',
+              description: 'Optional',
+            },
+            soilTested: {
+              type: 'boolean',
+              example: true,
+              description: 'Optional',
+            },
+            previousUse: {
+              type: 'string',
+              example: 'Coffee plantation',
+              description: 'Optional',
+            },
+            agriculturalSupport: {
+              type: 'string',
+              example: 'Cooperative nearby',
+              description: 'Optional',
+            },
+            climateInfo: {
+              type: 'string',
+              example: 'High rainfall Oct-April',
+              description: 'Optional',
+            },
+            zoningType: {
+              type: 'string',
+              enum: ['RESIDENTIAL', 'COMMERCIAL', 'INDUSTRIAL', 'MIXED_USE'],
+              example: 'RESIDENTIAL',
+              description: 'Optional - For construction',
+            },
+            electricityAccess: {
+              type: 'string',
+              enum: ['CONNECTED', 'NEARBY', 'NOT_AVAILABLE', 'FEASIBLE'],
+              example: 'NEARBY',
+              description: 'Optional',
+            },
+            waterAccess: {
+              type: 'string',
+              enum: ['CONNECTED', 'NEARBY', 'NOT_AVAILABLE', 'FEASIBLE'],
+              example: 'CONNECTED',
+              description: 'Optional',
+            },
+            sanitationAccess: {
+              type: 'string',
+              enum: ['CONNECTED', 'NEARBY', 'NOT_AVAILABLE', 'FEASIBLE'],
+              example: 'CONNECTED',
+              description: 'Optional',
+            },
+            securityInfo: {
+              type: 'string',
+              example: 'Gated community 24/7 security',
+              description: 'Optional',
+            },
+          },
+        },
+        files: {
+          type: 'array',
+          items: { type: 'string', format: 'binary' },
+          description: 'Optional - Upload images/videos',
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Land created',
+    schema: {
+      example: {
+        message: 'Land created with files!',
+        data: {
+          id: 'uuid',
+          title: 'Terreno 5 Hectares',
+          price: 5000000,
+          images: ['/uploads/land/uuid/img.jpg'],
+          videos: [],
+        },
+      },
+    },
+  })
+  @ApiResponse({ status: 400, description: 'Bad Request - Missing fields' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden - Requires ADMIN' })
   async create(
     @Body() body: any,
     @UploadedFiles() files?: Express.Multer.File[],
@@ -131,7 +317,23 @@ export class LandListingsController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Update land (ADMIN only)' })
+  @ApiOperation({
+    summary: 'Update land (ADMIN only)',
+    description: 'Update land listing. Only send fields to change.',
+  })
+  @ApiParam({ name: 'id', description: 'Land listing UUID' })
+  @ApiBody({
+    description: 'Fields to update',
+    schema: {
+      type: 'object',
+      example: {
+        price: 4500000,
+        status: 'SOLD',
+      },
+    },
+  })
+  @ApiResponse({ status: 200, description: 'Updated' })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
   update(@Param('id') id: string, @Body() dto: UpdateLandListingDto) {
     return this.landListingsService.update(id, dto);
   }
@@ -142,6 +344,14 @@ export class LandListingsController {
   @ApiBearerAuth('JWT-auth')
   @UseInterceptors(FilesInterceptor('files', 15))
   @ApiConsumes('multipart/form-data')
+  @ApiOperation({
+    summary: 'Add media (ADMIN)',
+    description: '📸 Adds files, keeps existing. Requires: ADMIN token + files',
+  })
+  @ApiResponse({
+    status: 200,
+    schema: { example: { message: 'Media added', imagesAdded: 2 } },
+  })
   async addMedia(
     @Param('id') id: string,
     @UploadedFiles() files: Express.Multer.File[],
@@ -173,6 +383,14 @@ export class LandListingsController {
   @ApiBearerAuth('JWT-auth')
   @UseInterceptors(FilesInterceptor('files', 15))
   @ApiConsumes('multipart/form-data')
+  @ApiOperation({
+    summary: 'Replace media (ADMIN)',
+    description: '🔄 DELETES all, uploads new. ⚠️ Warning: Deletes existing!',
+  })
+  @ApiResponse({
+    status: 200,
+    schema: { example: { message: 'Media replaced', totalImages: 3 } },
+  })
   async replaceMedia(
     @Param('id') id: string,
     @UploadedFiles() files: Express.Multer.File[],
@@ -198,6 +416,15 @@ export class LandListingsController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
   @ApiBearerAuth('JWT-auth')
+  @ApiOperation({
+    summary: 'Delete file (ADMIN)',
+    description: '🗑️ Deletes ONE file. Use filename only: 1696400000-uuid.jpg',
+  })
+  @ApiParam({ name: 'filename', example: '1696400000-uuid.jpg' })
+  @ApiResponse({
+    status: 200,
+    schema: { example: { message: 'Image deleted', type: 'image' } },
+  })
   async deleteMedia(
     @Param('id') id: string,
     @Param('filename') filename: string,

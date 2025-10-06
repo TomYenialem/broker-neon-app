@@ -50,14 +50,137 @@ export class MachineListingsController {
   @ApiOperation({
     summary: 'Create machine listing (ADMIN only)',
     description:
-      'Create machine listing with OR without files. Supports JSON and form-data.',
+      'Create machine listing with JSON or form-data. Files optional. Supports multiple images and videos.',
+  })
+  @ApiBody({
+    description: 'Machine listing data - JSON or form-data',
+    schema: {
+      type: 'object',
+      required: ['title', 'price', 'machineDetails'],
+      properties: {
+        title: { type: 'string', example: 'Caterpillar 320D Excavator 2015' },
+        description: { type: 'string', example: 'Well maintained excavator' },
+        price: { type: 'number', example: 45000 },
+        currency: { type: 'string', enum: ['AOA', 'USD'], default: 'USD' },
+        province: { type: 'string', example: 'Luanda' },
+        userId: { type: 'string', example: 'user-id-optional' },
+        machineDetails: {
+          type: 'object',
+          description: `
+Machine details object with required and optional fields:
+
+REQUIRED FIELDS:
+- machineType (string): Type of equipment (e.g., Excavator, Forklift, Generator, Bulldozer)
+- condition (enum): NEW, USED, RECONDITIONED
+
+OPTIONAL FIELDS:
+- modelNumber (string): e.g., 320D, 8FD30
+- manufactureYear (number): e.g., 2015
+- hoursOfUse (number): Operating hours (like mileage for vehicles)
+- workingCapacity (string): e.g., "Digging depth: 6.5m, Bucket: 1.2m³"
+- specifications (string): Technical specs (weight, engine, power)
+- serviceHistory (boolean): Service records available?
+- reasonForSale (string): Why selling
+- sparePartsAvailability (enum): EASILY_AVAILABLE, AVAILABLE, DIFFICULT, NOT_AVAILABLE
+- currentLocation (string): Where to inspect`,
+          required: ['machineType', 'condition'],
+          properties: {
+            machineType: {
+              type: 'string',
+              example: 'Excavator',
+              description: 'Required - e.g., Excavator, Forklift, Generator',
+            },
+            modelNumber: {
+              type: 'string',
+              example: '320D',
+              description: 'Optional',
+            },
+            condition: {
+              type: 'string',
+              enum: ['NEW', 'USED', 'RECONDITIONED'],
+              example: 'USED',
+              description: 'Required',
+            },
+            manufactureYear: {
+              type: 'number',
+              example: 2015,
+              description: 'Optional',
+            },
+            hoursOfUse: {
+              type: 'number',
+              example: 8500,
+              description: 'Optional - Equivalent to mileage',
+            },
+            workingCapacity: {
+              type: 'string',
+              example: 'Digging depth: 6.5m, Bucket: 1.2m³',
+              description: 'Optional',
+            },
+            specifications: {
+              type: 'string',
+              example: 'Weight: 22,000kg, Engine: Cat C6.6, Power: 122HP',
+              description: 'Optional',
+            },
+            serviceHistory: {
+              type: 'boolean',
+              example: true,
+              description: 'Optional',
+            },
+            reasonForSale: {
+              type: 'string',
+              example: 'Project completed',
+              description: 'Optional',
+            },
+            sparePartsAvailability: {
+              type: 'string',
+              enum: [
+                'EASILY_AVAILABLE',
+                'AVAILABLE',
+                'DIFFICULT',
+                'NOT_AVAILABLE',
+              ],
+              example: 'EASILY_AVAILABLE',
+              description: 'Optional',
+            },
+            currentLocation: {
+              type: 'string',
+              example: 'Viana Industrial Zone',
+              description: 'Optional',
+            },
+          },
+        },
+        files: {
+          type: 'array',
+          items: { type: 'string', format: 'binary' },
+          description: 'Optional - Upload images/videos',
+        },
+      },
+    },
   })
   @ApiResponse({
     status: 201,
-    description: 'Machine listing created successfully',
+    description: 'Machine created',
+    schema: {
+      example: {
+        message: 'Machine listing created successfully with files!',
+        data: {
+          id: 'uuid',
+          title: 'Caterpillar 320D Excavator',
+          price: 45000,
+          currency: 'USD',
+          images: ['/uploads/machine/uuid/img.jpg'],
+          videos: ['/uploads/machine/uuid/video.mp4'],
+        },
+        filesUploaded: {
+          images: 1,
+          videos: 1,
+        },
+      },
+    },
   })
+  @ApiResponse({ status: 400, description: 'Bad Request - Missing fields' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @ApiResponse({ status: 403, description: 'Forbidden - Requires ADMIN role' })
+  @ApiResponse({ status: 403, description: 'Forbidden - Requires ADMIN' })
   async create(
     @Body() body: any,
     @UploadedFiles() files?: Express.Multer.File[],
@@ -172,10 +295,24 @@ export class MachineListingsController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Update machine listing (ADMIN only)' })
+  @ApiOperation({
+    summary: 'Update machine (ADMIN only)',
+    description: 'Update machine listing. Only send fields to change.',
+  })
   @ApiParam({ name: 'id', description: 'Machine listing UUID' })
-  @ApiResponse({ status: 200, description: 'Updated successfully' })
-  @ApiResponse({ status: 403, description: 'Forbidden - Requires ADMIN' })
+  @ApiBody({
+    description: 'Fields to update',
+    schema: {
+      type: 'object',
+      example: {
+        price: 42000,
+        status: 'SOLD',
+        description: 'Price reduced for quick sale',
+      },
+    },
+  })
+  @ApiResponse({ status: 200, description: 'Updated' })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
   update(@Param('id') id: string, @Body() dto: UpdateMachineListingDto) {
     return this.machineListingsService.update(id, dto);
   }
@@ -187,10 +324,14 @@ export class MachineListingsController {
   @UseInterceptors(FilesInterceptor('files', 15))
   @ApiConsumes('multipart/form-data')
   @ApiOperation({
-    summary: 'Add media (ADMIN only)',
-    description: 'Add images/videos, keeps existing',
+    summary: 'Add media (ADMIN)',
+    description: '📸 Adds files, keeps existing. Requires: ADMIN token + files',
   })
   @ApiParam({ name: 'id', description: 'Machine listing UUID' })
+  @ApiResponse({
+    status: 200,
+    schema: { example: { message: 'Media added', imagesAdded: 2 } },
+  })
   async addMedia(
     @Param('id') id: string,
     @UploadedFiles() files: Express.Multer.File[],
@@ -233,7 +374,14 @@ export class MachineListingsController {
   @ApiBearerAuth('JWT-auth')
   @UseInterceptors(FilesInterceptor('files', 15))
   @ApiConsumes('multipart/form-data')
-  @ApiOperation({ summary: 'Replace all media (ADMIN only)' })
+  @ApiOperation({
+    summary: 'Replace media (ADMIN)',
+    description: '🔄 DELETES all, uploads new. ⚠️ Deletes existing!',
+  })
+  @ApiResponse({
+    status: 200,
+    schema: { example: { message: 'Media replaced', totalImages: 3 } },
+  })
   async replaceMedia(
     @Param('id') id: string,
     @UploadedFiles() files: Express.Multer.File[],
@@ -267,7 +415,15 @@ export class MachineListingsController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Delete specific media file (ADMIN only)' })
+  @ApiOperation({
+    summary: 'Delete file (ADMIN)',
+    description: '🗑️ Deletes ONE file. Use filename only: 1696400000-uuid.jpg',
+  })
+  @ApiParam({ name: 'filename', example: '1696400000-uuid.jpg' })
+  @ApiResponse({
+    status: 200,
+    schema: { example: { message: 'Image deleted', type: 'image' } },
+  })
   async deleteMedia(
     @Param('id') id: string,
     @Param('filename') filename: string,
