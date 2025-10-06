@@ -23,14 +23,16 @@ export class LandListingsService {
         user: {
           select: {
             id: true,
-            name: true,
+            firstName: true,
+            lastName: true,
+            email: true,
           },
         },
       },
     });
   }
 
- async findAll(filters: LandListingFilterDto) {
+  async findAll(filters: LandListingFilterDto) {
     const {
       page = 1,
       limit = 20,
@@ -60,10 +62,8 @@ export class LandListingsService {
 
     // Location filters
     if (province) where.province = { contains: province };
-    if (municipality)
-      where.municipality = { contains: municipality};
-    if (neighborhood)
-      where.neighborhood = { contains: neighborhood};
+    if (municipality) where.municipality = { contains: municipality };
+    if (neighborhood) where.neighborhood = { contains: neighborhood };
 
     // Price filters
     if (minPrice !== undefined || maxPrice !== undefined) {
@@ -81,7 +81,7 @@ export class LandListingsService {
     if (search) {
       where.OR = [
         { title: { contains: search } },
-        { description: { contains: search} },
+        { description: { contains: search } },
       ];
     }
 
@@ -105,7 +105,9 @@ export class LandListingsService {
           user: {
             select: {
               id: true,
-              name: true,
+              firstName: true,
+              lastName: true,
+              email: true,
             },
           },
         },
@@ -130,7 +132,6 @@ export class LandListingsService {
     };
   }
 
-
   async findOne(id: string) {
     const listing = await this.prisma.listing.findUnique({
       where: {
@@ -150,13 +151,11 @@ export class LandListingsService {
   }
 
   async update(id: string, updateLandListingDto: UpdateLandListingDto) {
-   const existingListing=await this.prisma.listing.findUnique({ 
-    where :{ id},
-    include: { landDetails: true },
-
-    }
-    );
-    if(!existingListing || existingListing.category !== ListingCategory.LAND){
+    const existingListing = await this.prisma.listing.findUnique({
+      where: { id },
+      include: { landDetails: true },
+    });
+    if (!existingListing || existingListing.category !== ListingCategory.LAND) {
       throw new NotFoundException('Land listing not found');
     }
     const { landDetails, ...listingData } = updateLandListingDto;
@@ -167,23 +166,24 @@ export class LandListingsService {
         ...(landDetails && {
           landDetails: {
             update: landDetails,
-      }
-    }),
+          },
+        }),
       },
       include: {
         landDetails: true,
         user: {
           select: {
             id: true,
-            name: true,
+            firstName: true,
+            lastName: true,
+            email: true,
           },
         },
-          }
-      })
+      },
+    });
   }
 
-
-async remove(id: string) {
+  async remove(id: string) {
     // Check if listing exists and is a car listing
     const existingListing = await this.prisma.listing.findUnique({
       where: { id },
@@ -200,5 +200,4 @@ async remove(id: string) {
       },
     });
   }
-
 }
