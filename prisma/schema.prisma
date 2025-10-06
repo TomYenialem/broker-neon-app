@@ -3,26 +3,64 @@ generator client {
 }
 
 datasource db {
-  provider          = "mysql"
+  provider          = "postgres"
   url               = env("DATABASE_URL")
   shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
 }
 
-/* ===================== USERS ===================== */
+/* ===================== USERS & AUTH ===================== */
 
 model User {
-  id        String   @id @default(uuid())
-  email     String   @unique
-  name      String
-  password  String
-  phone     String?
-  role      UserRole @default(USER)
+  id            String   @id @default(uuid())
+  email         String   @unique
+  emailVerified Boolean  @default(false)
+  firstName     String
+  lastName      String
+  password      String
+  phone         String?
+  image         String?
+  role          UserRole @default(USER)
 
   // All listings created by this user
   listings  Listing[]
+  accounts  Account[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([email])
+}
+
+model Account {
+  id                String  @id @default(uuid())
+  userId            String
+  accountId         String
+  providerId        String
+  accessToken       String?
+  refreshToken      String?
+  idToken           String?
+  expiresAt         DateTime?
+  password          String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([providerId, accountId])
+  @@index([userId])
+}
+
+model Verification {
+  id         String   @id @default(uuid())
+  identifier String
+  value      String
+  expiresAt  DateTime
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([identifier, value])
 }
 
 /* ===================== UNIFIED LISTING ===================== */
@@ -40,16 +78,16 @@ model Listing {
   municipality String?
   neighborhood String?
 
-  // Media (use Json arrays for images; string for single video URL)
-  images   Json
-  videoUrl String?
+  // Media (use Json arrays for both images and videos)
+  images Json
+  videos Json @default("[]")
 
   // Category selector: LAND | CAR | HOUSE | MACHINE
   category ListingCategory
 
-  // Owner
-  userId String
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // Owner  optional
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   // 1:1 optional relations to category-specific detail tables
   landDetails    LandDetails?
@@ -80,8 +118,10 @@ model Listing {
   // Global price filters
   @@index([price], name: "idx_listing_price")
 
-  // Full-text search on title & description
-  @@fulltext([title, description], map: "ft_listing_title_desc")
+  // PostgreSQL full-text search indexes on title & description
+  @@index([title], name: "idx_listing_title")
+  @@index([description], name: "idx_listing_description")
+  
 }
 
 /* ===================== CATEGORY-SPECIFIC TABLES ===================== */
@@ -150,7 +190,7 @@ model HouseDetails {
 
   houseType            HouseType
   plotSize             Float?
-  livingArea           Float
+  livingArea           Float?
   bedrooms             Int
   bathrooms            Int
   constructionQuality  ConstructionQuality
