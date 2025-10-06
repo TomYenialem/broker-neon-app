@@ -5,8 +5,19 @@ import { BadRequestException } from '@nestjs/common';
 import * as fs from 'fs';
 
 // Allowed file types
-const IMAGE_MIME_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
-const VIDEO_MIME_TYPES = ['video/mp4', 'video/mpeg', 'video/quicktime', 'video/x-msvideo'];
+const IMAGE_MIME_TYPES = [
+  'image/jpeg',
+  'image/jpg',
+  'image/png',
+  'image/webp',
+  'image/gif',
+];
+const VIDEO_MIME_TYPES = [
+  'video/mp4',
+  'video/mpeg',
+  'video/quicktime',
+  'video/x-msvideo',
+];
 const ALLOWED_MIME_TYPES = [...IMAGE_MIME_TYPES, ...VIDEO_MIME_TYPES];
 
 // File size limits (in bytes)
@@ -85,7 +96,7 @@ export function moveFilesToListingFolder(
   category: string,
 ): string[] {
   const listingDir = `./uploads/${category.toLowerCase()}/${listingId}`;
-  
+
   // Create listing directory
   if (!fs.existsSync(listingDir)) {
     fs.mkdirSync(listingDir, { recursive: true });
@@ -95,12 +106,14 @@ export function moveFilesToListingFolder(
 
   files.forEach((file) => {
     const newPath = `${listingDir}/${file.filename}`;
-    
+
     // Move file from temp category folder to listing folder
     fs.renameSync(file.path, newPath);
-    
+
     // Return relative URL path
-    filePaths.push(`/uploads/${category.toLowerCase()}/${listingId}/${file.filename}`);
+    filePaths.push(
+      `/uploads/${category.toLowerCase()}/${listingId}/${file.filename}`,
+    );
   });
 
   return filePaths;
@@ -109,7 +122,7 @@ export function moveFilesToListingFolder(
 // Delete listing folder and all files
 export function deleteListingFolder(listingId: string, category: string): void {
   const listingDir = `./uploads/${category.toLowerCase()}/${listingId}`;
-  
+
   if (fs.existsSync(listingDir)) {
     fs.rmSync(listingDir, { recursive: true, force: true });
   }
@@ -119,4 +132,3 @@ export function deleteListingFolder(listingId: string, category: string): void {
 export function generateFileUrl(filePath: string, baseUrl: string): string {
   return `${baseUrl}${filePath}`;
 }
-

@@ -95,4 +95,3 @@ export class FileUploadService {
     return allowedTypes.includes(mimetype);
   }
 }
-

@@ -9,4 +9,3 @@ import { FileUploadService } from './services/file-upload.service';
   exports: [FileUploadService],
 })
 export class CommonModule {}
-

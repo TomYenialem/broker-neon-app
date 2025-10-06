@@ -60,4 +60,3 @@ export class RegisterAdminDto {
   @IsEnum(UserRole)
   role: UserRole;
 }
-
