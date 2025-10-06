@@ -1,0 +1,439 @@
+### API Testing File
+### Use REST Client extension in VS Code or similar tools
+### Replace {{token}} and {{userId}} with actual values after login
+
+@baseUrl = http://localhost:3000/api
+@token = your-token-here
+@userId = your-user-id-here
+
+###############################################
+# AUTHENTICATION
+###############################################
+
+### 1. Register New User
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "email": "broker@example.com",
+  "password": "SecurePass123!",
+  "firstName": "João",
+  "lastName": "Silva",
+  "phone": "+244 923 456 789",
+  "role": "USER"
+}
+
+### 2. Login
+# @name login
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "broker@example.com",
+  "password": "SecurePass123!"
+}
+
+### 3. Refresh Token
+POST {{baseUrl}}/auth/refresh
+Content-Type: application/json
+
+{
+  "refreshToken": "your-refresh-token-here"
+}
+
+### 4. Register Admin User (ADMIN Only - Protected)
+POST {{baseUrl}}/auth/register-admin
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "email": "admin@broker.com",
+  "password": "AdminSecurePass123!",
+  "firstName": "Admin",
+  "lastName": "User",
+  "phone": "+244 923 456 789",
+  "role": "ADMIN"
+}
+
+### 5. Get Current User (Protected)
+GET {{baseUrl}}/auth/me
+Authorization: Bearer {{token}}
+
+### 6. Forgot Password (Request Reset Token)
+POST {{baseUrl}}/auth/forgot-password
+Content-Type: application/json
+
+{
+  "email": "broker@example.com"
+}
+
+### 7. Verify Reset Token
+POST {{baseUrl}}/auth/verify-reset-token
+Content-Type: application/json
+
+{
+  "token": "paste-token-from-forgot-password-response"
+}
+
+### 8. Reset Password
+POST {{baseUrl}}/auth/reset-password
+Content-Type: application/json
+
+{
+  "token": "paste-token-from-forgot-password-response",
+  "newPassword": "NewSecurePassword123!"
+}
+
+###############################################
+# USER MANAGEMENT (ADMIN ONLY)
+###############################################
+
+### 9. Get All Users (ADMIN Only - Protected)
+GET {{baseUrl}}/auth/users?page=1&limit=10
+Authorization: Bearer {{token}}
+
+### 10. Get All Users - Filter by Role
+GET {{baseUrl}}/auth/users?role=USER&page=1&limit=10
+Authorization: Bearer {{token}}
+
+### 11. Get All Users - Search by Name/Email/Phone
+GET {{baseUrl}}/auth/users?search=João&page=1&limit=10
+Authorization: Bearer {{token}}
+
+### 12. Get All Users - Sort by Name
+GET {{baseUrl}}/auth/users?sort=name_asc&page=1&limit=10
+Authorization: Bearer {{token}}
+
+### 13. Get All Users - Combined Filters
+GET {{baseUrl}}/auth/users?role=ADMIN&search=admin&sort=newest&page=1&limit=5
+Authorization: Bearer {{token}}
+
+###############################################
+# CAR LISTINGS
+###############################################
+
+### 5. Get All Cars (Public)
+GET {{baseUrl}}/car-listings?page=1&limit=20&sort=newest
+
+### 6. Get Cars with Filters
+GET {{baseUrl}}/car-listings?province=Luanda&minPrice=10000000&maxPrice=30000000&fuelType=DIESEL
+
+### 7. Get Available Car Makes
+GET {{baseUrl}}/car-listings/makes
+
+### 8. Get Single Car
+GET {{baseUrl}}/car-listings/car-id-here
+
+### 9. Create Car Listing (Protected)
+POST {{baseUrl}}/car-listings
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "title": "Toyota Land Cruiser Prado 2018, Diesel, Automático",
+  "description": "Excelente condição, importado da Europa. Totalmente legalizado.",
+  "price": 25000000,
+  "currency": "AOA",
+  "province": "Luanda",
+  "municipality": "Talatona",
+  "neighborhood": "Talatona Gardens",
+  "images": [
+    "https://example.com/car1.jpg",
+    "https://example.com/car2.jpg",
+    "https://example.com/car3.jpg"
+  ],
+  "videoUrl": "https://example.com/car-video.mp4",
+  "userId": "{{userId}}",
+  "carDetails": {
+    "make": "Toyota",
+    "model": "Land Cruiser Prado",
+    "trimLevel": "VX",
+    "manufactureYear": 2018,
+    "registrationYear": 2019,
+    "mileage": 45000,
+    "fuelType": "DIESEL",
+    "transmission": "AUTOMATIC",
+    "condition": "EXCELLENT",
+    "color": "Branco Pérola",
+    "interiorType": "LEATHER",
+    "vehicleOrigin": "EUROPE",
+    "customsStatus": "LEGALIZED",
+    "serviceHistory": true,
+    "reasonForSelling": "Upgrading to newer model",
+    "features": ["4x4", "Air Conditioning", "Cruise Control", "Sunroof", "Parking Sensors"]
+  }
+}
+
+### 10. Update Car Listing (Protected)
+PATCH {{baseUrl}}/car-listings/car-id-here
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "price": 24000000,
+  "description": "Price reduced! Excellent condition."
+}
+
+### 11. Delete Car Listing (Protected)
+DELETE {{baseUrl}}/car-listings/car-id-here
+Authorization: Bearer {{token}}
+
+###############################################
+# LAND LISTINGS
+###############################################
+
+### 12. Get All Land (Public)
+GET {{baseUrl}}/land-listings?page=1&limit=20
+
+### 13. Get Land with Filters
+GET {{baseUrl}}/land-listings?province=Benguela&landPurpose=AGRICULTURAL
+
+### 14. Get Single Land
+GET {{baseUrl}}/land-listings/land-id-here
+
+### 15. Create Land Listing (Protected) - Agricultural
+POST {{baseUrl}}/land-listings
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "title": "Terreno de 5 Hectares para Agricultura, Benguela",
+  "description": "Terreno plano com acesso à água, ideal para cultivo de café ou milho",
+  "price": 5000000,
+  "currency": "AOA",
+  "province": "Benguela",
+  "municipality": "Lobito",
+  "neighborhood": "Caponte",
+  "images": [
+    "https://example.com/land1.jpg",
+    "https://example.com/land2.jpg"
+  ],
+  "userId": "{{userId}}",
+  "landDetails": {
+    "totalArea": 50000,
+    "areaUnit": "SQUARE_METERS",
+    "topography": "FLAT",
+    "distanceFromMainRoad": 500,
+    "isDemarcated": true,
+    "documentType": "TITLE_DEED",
+    "landPurpose": "AGRICULTURAL",
+    "waterSource": "Rio nearby (200m), poço artesiano no terreno",
+    "hasIrrigationSystem": false,
+    "soilType": "LOAMY",
+    "soilTested": true,
+    "previousUse": "Coffee plantation",
+    "agriculturalSupport": "Cooperative nearby, MINAGRI extension office",
+    "climateInfo": "High rainfall season Oct-April, avg 1200mm/year"
+  }
+}
+
+### 16. Create Land Listing (Protected) - Residential
+POST {{baseUrl}}/land-listings
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "title": "Loteamento para Construção, Talatona, Luanda",
+  "description": "Terreno para construção residencial em zona nobre",
+  "price": 12000000,
+  "currency": "AOA",
+  "province": "Luanda",
+  "municipality": "Talatona",
+  "neighborhood": "Talatona Sul",
+  "images": ["https://example.com/plot1.jpg"],
+  "userId": "{{userId}}",
+  "landDetails": {
+    "totalArea": 800,
+    "areaUnit": "SQUARE_METERS",
+    "topography": "FLAT",
+    "distanceFromMainRoad": 50,
+    "isDemarcated": true,
+    "documentType": "TITLE_DEED",
+    "landPurpose": "RESIDENTIAL",
+    "zoningType": "RESIDENTIAL",
+    "electricityAccess": "NEARBY",
+    "waterAccess": "CONNECTED",
+    "sanitationAccess": "CONNECTED",
+    "securityInfo": "Condomínio fechado com segurança 24h"
+  }
+}
+
+### 17. Update Land Listing (Protected)
+PATCH {{baseUrl}}/land-listings/land-id-here
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "price": 4500000,
+  "status": "ACTIVE"
+}
+
+### 18. Delete Land Listing (Protected)
+DELETE {{baseUrl}}/land-listings/land-id-here
+Authorization: Bearer {{token}}
+
+###############################################
+# HOUSE LISTINGS
+###############################################
+
+### 19. Get All Houses (Public)
+GET {{baseUrl}}/house-listings?page=1&limit=20
+
+### 20. Get Houses with Filters
+GET {{baseUrl}}/house-listings?province=Luanda&minBedrooms=3&maxBedrooms=5&houseType=DETACHED
+
+### 21. Get Single House
+GET {{baseUrl}}/house-listings/house-id-here
+
+### 22. Create House Listing (Protected)
+POST {{baseUrl}}/house-listings
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "title": "Moradia T4 com Piscina, Talatona",
+  "description": "Casa moderna com todas as comodidades, acabamentos de luxo",
+  "price": 85000000,
+  "currency": "AOA",
+  "province": "Luanda",
+  "municipality": "Talatona",
+  "neighborhood": "Talatona Gardens",
+  "images": [
+    "https://example.com/house1.jpg",
+    "https://example.com/house2.jpg",
+    "https://example.com/house3.jpg"
+  ],
+  "videoUrl": "https://example.com/house-tour.mp4",
+  "userId": "{{userId}}",
+  "houseDetails": {
+    "houseType": "DETACHED",
+    "plotSize": 600,
+    "livingArea": 350,
+    "bedrooms": 4,
+    "bathrooms": 3,
+    "constructionQuality": "NEW_CONSTRUCTION",
+    "waterSource": "PUBLIC_NETWORK",
+    "hasWaterTank": true,
+    "hasGenerator": true,
+    "hasInverter": true,
+    "securityFeatures": [
+      "Electric fence",
+      "CCTV cameras",
+      "Security guard 24/7",
+      "Alarm system"
+    ],
+    "interiorFeatures": [
+      "Fully equipped kitchen",
+      "Air conditioning in all rooms",
+      "Built-in wardrobes",
+      "Marble flooring",
+      "Smart home system"
+    ],
+    "exteriorFeatures": [
+      "Swimming pool",
+      "Garden",
+      "Garage for 2 cars",
+      "Outdoor dining area",
+      "Borehole"
+    ],
+    "distanceToCityCenter": 15,
+    "distanceToSchools": 2,
+    "distanceToHospitals": 5,
+    "distanceToSupermarkets": 1
+  }
+}
+
+### 23. Update House Listing (Protected)
+PATCH {{baseUrl}}/house-listings/house-id-here
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "price": 80000000,
+  "description": "Price negotiable! Beautiful modern house."
+}
+
+### 24. Delete House Listing (Protected)
+DELETE {{baseUrl}}/house-listings/house-id-here
+Authorization: Bearer {{token}}
+
+###############################################
+# MACHINE LISTINGS
+###############################################
+
+### 25. Get All Machines (Public)
+GET {{baseUrl}}/machine-listings?page=1&limit=20
+
+### 26. Get Machines with Filters
+GET {{baseUrl}}/machine-listings?condition=USED&machineType=Excavator
+
+### 27. Get Single Machine
+GET {{baseUrl}}/machine-listings/machine-id-here
+
+### 28. Create Machine Listing (Protected)
+POST {{baseUrl}}/machine-listings
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "title": "Caterpillar 320D Excavator 2015",
+  "description": "Well maintained excavator, ready to work. Full service history available.",
+  "price": 45000,
+  "currency": "USD",
+  "province": "Luanda",
+  "municipality": "Viana",
+  "neighborhood": "Zona Industrial",
+  "images": [
+    "https://example.com/machine1.jpg",
+    "https://example.com/machine2.jpg",
+    "https://example.com/machine3.jpg"
+  ],
+  "userId": "{{userId}}",
+  "machineDetails": {
+    "machineType": "Excavator",
+    "modelNumber": "320D",
+    "condition": "USED",
+    "manufactureYear": 2015,
+    "hoursOfUse": 8500,
+    "workingCapacity": "Digging depth: 6.5m, Reach: 10m, Bucket capacity: 1.2m³",
+    "specifications": "Operating weight: 22,000 kg, Engine: Cat C6.6, Power: 122 HP",
+    "serviceHistory": true,
+    "reasonForSale": "Construction project completed, upgrading fleet",
+    "sparePartsAvailability": "EASILY_AVAILABLE",
+    "currentLocation": "Viana Industrial Zone, can arrange viewing"
+  }
+}
+
+### 29. Update Machine Listing (Protected)
+PATCH {{baseUrl}}/machine-listings/machine-id-here
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "price": 42000,
+  "description": "Price reduced for quick sale!"
+}
+
+### 30. Delete Machine Listing (Protected)
+DELETE {{baseUrl}}/machine-listings/machine-id-here
+Authorization: Bearer {{token}}
+
+###############################################
+# SEARCH & FILTER EXAMPLES
+###############################################
+
+### Search cars by keyword
+GET {{baseUrl}}/car-listings?search=Toyota&province=Luanda
+
+### Filter houses by bedrooms and price
+GET {{baseUrl}}/house-listings?minBedrooms=3&maxBedrooms=4&minPrice=50000000&maxPrice=100000000
+
+### Search land for agriculture
+GET {{baseUrl}}/land-listings?search=agricultura&province=Benguela
+
+### Get machines sorted by price
+GET {{baseUrl}}/machine-listings?sort=price_asc&condition=USED
+
+### Pagination example
+GET {{baseUrl}}/car-listings?page=2&limit=10
+
