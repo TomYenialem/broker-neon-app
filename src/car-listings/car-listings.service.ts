@@ -26,7 +26,9 @@ export class CarListingsService {
         user: {
           select: {
             id: true,
-            name: true
+            firstName: true,
+            lastName: true,
+            email: true,
           },
         },
       },
@@ -95,7 +97,7 @@ export class CarListingsService {
       customsStatus ||
       minYear ||
       maxYear ||
-      color||
+      color ||
       maxMileage
     ) {
       where.carDetails = {};
@@ -105,7 +107,7 @@ export class CarListingsService {
       if (fuelType) where.carDetails.fuelType = fuelType;
       if (transmission) where.carDetails.transmission = transmission;
       if (condition) where.carDetails.condition = condition;
-      if(color) where.carDetails.color = { contains: color };
+      if (color) where.carDetails.color = { contains: color };
       if (vehicleOrigin) where.carDetails.vehicleOrigin = vehicleOrigin;
       if (customsStatus) where.carDetails.customsStatus = customsStatus;
 
@@ -132,7 +134,9 @@ export class CarListingsService {
           user: {
             select: {
               id: true,
-              name: true,
+              firstName: true,
+              lastName: true,
+              email: true,
             },
           },
         },
@@ -165,8 +169,9 @@ export class CarListingsService {
         user: {
           select: {
             id: true,
-            name: true,
-         
+            firstName: true,
+            lastName: true,
+            email: true,
           },
         },
       },
@@ -207,7 +212,8 @@ export class CarListingsService {
         user: {
           select: {
             id: true,
-            name: true,
+            firstName: true,
+            lastName: true,
             email: true,
             phone: true,
           },
