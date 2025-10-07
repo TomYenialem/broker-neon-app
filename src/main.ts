@@ -64,7 +64,7 @@ async function bootstrap() {
       'JWT-auth',
     )
     .addServer('http://localhost:3000', 'Development Server')
-    .addServer('https://api.broker.com', 'Production Server')
+    .addServer('https://broker-app-aa17.onrender.com', 'Production Server')
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
