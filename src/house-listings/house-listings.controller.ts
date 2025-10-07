@@ -102,6 +102,12 @@ export class HouseListingsController {
           enum: ['ACTIVE', 'SOLD', 'PENDING', 'EXPIRED'],
           default: 'ACTIVE',
         },
+        isFeatured: {
+          type: 'boolean',
+          example: false,
+          default: false,
+          description: 'Optional - Mark as featured listing (default: false)'
+        },
         province: { type: 'string', example: 'Luanda' },
         municipality: { type: 'string', example: 'Talatona' },
         neighborhood: { type: 'string', example: 'Talatona Gardens' },
@@ -242,6 +248,21 @@ OPTIONAL FIELDS:
               example: 0.8,
               description: 'Kilometers (Optional)',
             },
+            additionalInformation: {
+              type: 'string',
+              example: 'Property has approved building plans for extension. Borehole was drilled in 2024.',
+              description: 'Optional - Any additional relevant information'
+            },
+            customFeatures: {
+              type: 'object',
+              example: {
+                'smartHome': true,
+                'solarPanels': '10kW system',
+                'waterFiltr': 'Whole house filtration',
+                'floorHeating': 'Master bedroom only'
+              },
+              description: 'Optional - Custom key-value pairs for unique features'
+            }
           },
         },
         files: {
@@ -351,6 +372,7 @@ OPTIONAL FIELDS:
           typeof body.price === 'string' ? parseFloat(body.price) : body.price,
         currency: body.currency || 'AOA',
         status: body.status || 'ACTIVE',
+        isFeatured: body.isFeatured === 'true' || body.isFeatured === true || false,
         province: body.province,
         municipality: body.municipality,
         neighborhood: body.neighborhood,
@@ -369,6 +391,7 @@ OPTIONAL FIELDS:
         price: body.price,
         currency: body.currency || 'AOA',
         status: body.status || 'ACTIVE',
+        isFeatured: body.isFeatured || false,
         province: body.province,
         municipality: body.municipality,
         neighborhood: body.neighborhood,

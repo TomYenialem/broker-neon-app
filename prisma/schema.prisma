@@ -81,6 +81,9 @@ model Listing {
   // Media (use Json arrays for both images and videos)
   images Json
   videos Json @default("[]")
+  
+  // Featured listing
+  isFeatured Boolean @default(false)
 
   // Category selector: LAND | CAR | HOUSE | MACHINE
   category ListingCategory
@@ -157,6 +160,10 @@ model LandDetails {
   waterAccess       UtilityAccess?
   sanitationAccess  UtilityAccess?
   securityInfo      String?
+  
+  // Additional custom fields
+  additionalInformation String?
+  customFeatures        Json?
 }
 
 /* ---- CAR ---- */
@@ -181,6 +188,10 @@ model CarDetails {
   reasonForSelling String?
 
   features Json
+  
+  // Additional custom fields
+  additionalInformation String?
+  customFeatures        Json?
 }
 
 /* ---- HOUSE ---- */
@@ -211,6 +222,10 @@ model HouseDetails {
   distanceToSchools      Float?
   distanceToHospitals    Float?
   distanceToSupermarkets Float?
+  
+  // Additional custom fields
+  additionalInformation String?
+  customFeatures        Json?
 }
 
 /* ---- MACHINE ---- */
@@ -229,6 +244,10 @@ model MachineDetails {
   reasonForSale         String?
   sparePartsAvailability SparePartsAvailability?
   currentLocation       String?
+  
+  // Additional custom fields
+  additionalInformation String?
+  customFeatures        Json?
 }
 
 /* ===================== ENUMS ===================== */
