@@ -62,6 +62,12 @@ export class CarListingsController {
         description: { type: 'string', example: 'Excellent condition' },
         price: { type: 'number', example: 8000000 },
         currency: { type: 'string', enum: ['AOA', 'USD'], default: 'AOA' },
+        isFeatured: {
+          type: 'boolean',
+          example: false,
+          default: false,
+          description: 'Optional - Featured listing',
+        },
         province: { type: 'string', example: 'Luanda' },
         userId: { type: 'string', example: 'user-id-optional' },
         carDetails: {
@@ -185,6 +191,21 @@ OPTIONAL FIELDS:
               example: ['4x4', 'AC', 'Cruise Control', 'Sunroof'],
               description: 'Required - Can be empty array',
             },
+            additionalInformation: {
+              type: 'string',
+              example:
+                'Vehicle has been used by single owner. All maintenance done at official dealer.',
+              description: 'Optional - Additional details',
+            },
+            customFeatures: {
+              type: 'object',
+              example: {
+                warranty: '2 years remaining',
+                tires: 'New Michelin 2024',
+                soundSystem: 'Bose premium',
+              },
+              description: 'Optional - Custom key-value features',
+            },
           },
         },
         files: {
@@ -255,6 +276,8 @@ OPTIONAL FIELDS:
       price:
         typeof body.price === 'string' ? parseFloat(body.price) : body.price,
       currency: body.currency || 'AOA',
+      isFeatured:
+        body.isFeatured === 'true' || body.isFeatured === true || false,
       images: [],
       videos: [],
       carDetails,

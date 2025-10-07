@@ -200,6 +200,22 @@ export class LandDetailsDto {
   @IsOptional()
   @IsString({ message: 'Security info must be a string' })
   securityInfo?: string;
+
+  @ApiPropertyOptional({
+    description: 'Additional information',
+    example: 'Land has environmental clearance.',
+    type: String,
+  })
+  @IsOptional()
+  @IsString()
+  additionalInformation?: string;
+
+  @ApiPropertyOptional({
+    description: 'Custom features',
+    example: { fruitTrees: '50+ mangos', borehole: '80m deep' },
+  })
+  @IsOptional()
+  customFeatures?: any;
 }
 
 export class CreateLandListingDto {
@@ -294,6 +310,16 @@ export class CreateLandListingDto {
   @IsOptional()
   @IsString({ message: 'Video URL must be a string' })
   videoUrl?: string;
+
+  @ApiPropertyOptional({
+    description: 'Mark as featured listing',
+    example: false,
+    default: false,
+    type: Boolean,
+  })
+  @IsOptional()
+  @IsBoolean()
+  isFeatured?: boolean;
 
   @ApiPropertyOptional({
     description: 'User ID (optional - owner of the listing)',

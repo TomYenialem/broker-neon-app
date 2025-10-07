@@ -62,6 +62,12 @@ export class MachineListingsController {
         description: { type: 'string', example: 'Well maintained excavator' },
         price: { type: 'number', example: 45000 },
         currency: { type: 'string', enum: ['AOA', 'USD'], default: 'USD' },
+        isFeatured: {
+          type: 'boolean',
+          example: false,
+          default: false,
+          description: 'Optional - Featured listing',
+        },
         province: { type: 'string', example: 'Luanda' },
         userId: { type: 'string', example: 'user-id-optional' },
         machineDetails: {
@@ -147,6 +153,21 @@ OPTIONAL FIELDS:
               example: 'Viana Industrial Zone',
               description: 'Optional',
             },
+            additionalInformation: {
+              type: 'string',
+              example:
+                'Machine comes with spare bucket and hydraulic hammer attachment. Training included.',
+              description: 'Optional - Additional details',
+            },
+            customFeatures: {
+              type: 'object',
+              example: {
+                warranty: '6 months parts',
+                delivery: 'Free within Luanda',
+                training: '2 days included',
+              },
+              description: 'Optional - Custom features',
+            },
           },
         },
         files: {
@@ -225,6 +246,8 @@ OPTIONAL FIELDS:
         typeof body.price === 'string' ? parseFloat(body.price) : body.price,
       currency: body.currency || 'AOA',
       status: body.status || 'ACTIVE',
+      isFeatured:
+        body.isFeatured === 'true' || body.isFeatured === true || false,
       province: body.province,
       municipality: body.municipality,
       neighborhood: body.neighborhood,

@@ -61,6 +61,12 @@ export class LandListingsController {
         description: { type: 'string', example: 'Terreno plano com água' },
         price: { type: 'number', example: 5000000 },
         currency: { type: 'string', enum: ['AOA', 'USD'], default: 'AOA' },
+        isFeatured: {
+          type: 'boolean',
+          example: false,
+          default: false,
+          description: 'Optional - Featured listing',
+        },
         province: { type: 'string', example: 'Benguela' },
         userId: { type: 'string', example: 'user-id-optional' },
         landDetails: {
@@ -205,6 +211,21 @@ FOR RESIDENTIAL/COMMERCIAL:
               example: 'Gated community 24/7 security',
               description: 'Optional',
             },
+            additionalInformation: {
+              type: 'string',
+              example:
+                'Land has environmental clearance. Access road to be paved in 2025.',
+              description: 'Optional - Additional details',
+            },
+            customFeatures: {
+              type: 'object',
+              example: {
+                fruitTrees: '50+ mango trees',
+                fencing: 'Electric fence installed',
+                borehole: '80m deep',
+              },
+              description: 'Optional - Custom features',
+            },
           },
         },
         files: {
@@ -275,6 +296,8 @@ FOR RESIDENTIAL/COMMERCIAL:
       price:
         typeof body.price === 'string' ? parseFloat(body.price) : body.price,
       currency: body.currency || 'AOA',
+      isFeatured:
+        body.isFeatured === 'true' || body.isFeatured === true || false,
       images: [],
       videos: [],
       landDetails,

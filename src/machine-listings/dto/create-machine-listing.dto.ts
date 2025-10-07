@@ -119,6 +119,22 @@ export class MachineDetailsDto {
   @IsOptional()
   @IsString()
   currentLocation?: string;
+
+  @ApiPropertyOptional({
+    description: 'Additional information',
+    example: 'Comes with spare parts. Training included.',
+    type: String,
+  })
+  @IsOptional()
+  @IsString()
+  additionalInformation?: string;
+
+  @ApiPropertyOptional({
+    description: 'Custom features',
+    example: { warranty: '6 months', delivery: 'Free' },
+  })
+  @IsOptional()
+  customFeatures?: any;
 }
 
 export class CreateMachineListingDto {
@@ -226,6 +242,16 @@ export class CreateMachineListingDto {
   @IsOptional()
   @IsString()
   userId?: string;
+
+  @ApiPropertyOptional({
+    description: 'Mark as featured listing',
+    example: false,
+    default: false,
+    type: Boolean,
+  })
+  @IsOptional()
+  @IsBoolean()
+  isFeatured?: boolean;
 
   @ApiProperty({
     description: 'Machine-specific details',

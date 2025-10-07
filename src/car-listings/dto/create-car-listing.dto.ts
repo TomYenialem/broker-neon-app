@@ -173,6 +173,26 @@ export class CarDetailsDto {
   })
   @IsArray({ message: 'Features must be an array' })
   features: any[];
+
+  @ApiPropertyOptional({
+    description: 'Additional information',
+    example: 'Single owner. All service at official dealer.',
+    type: String,
+  })
+  @IsOptional()
+  @IsString()
+  additionalInformation?: string;
+
+  @ApiPropertyOptional({
+    description: 'Custom features',
+    example: {
+      warranty: '2 years',
+      tires: 'New Michelin',
+      soundSystem: 'Bose',
+    },
+  })
+  @IsOptional()
+  customFeatures?: any;
 }
 
 export class CreateCarListingDto {
@@ -280,6 +300,16 @@ export class CreateCarListingDto {
   @IsOptional()
   @IsString({ message: 'User ID must be a string' })
   userId?: string;
+
+  @ApiPropertyOptional({
+    description: 'Mark as featured listing',
+    example: false,
+    default: false,
+    type: Boolean,
+  })
+  @IsOptional()
+  @IsBoolean()
+  isFeatured?: boolean;
 
   @ApiProperty({
     description: 'Car-specific details',

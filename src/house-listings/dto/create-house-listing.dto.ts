@@ -188,6 +188,26 @@ export class HouseDetailsDto {
   @IsNumber()
   @Min(0)
   distanceToSupermarkets?: number;
+
+  @ApiPropertyOptional({
+    description: 'Additional information about the property',
+    example: 'Property has approved building plans. Borehole drilled in 2024.',
+    type: String,
+  })
+  @IsOptional()
+  @IsString()
+  additionalInformation?: string;
+
+  @ApiPropertyOptional({
+    description: 'Custom features as key-value pairs',
+    example: {
+      smartHome: true,
+      solarPanels: '10kW',
+      waterFiltration: 'Whole house',
+    },
+  })
+  @IsOptional()
+  customFeatures?: any;
 }
 
 export class CreateHouseListingDto {
@@ -297,6 +317,16 @@ export class CreateHouseListingDto {
   @IsOptional()
   @IsArray()
   videos?: any[];
+
+  @ApiPropertyOptional({
+    description: 'Mark as featured listing',
+    example: false,
+    default: false,
+    type: Boolean,
+  })
+  @IsOptional()
+  @IsBoolean()
+  isFeatured?: boolean;
 
   @ApiProperty({
     description: 'House-specific details',
