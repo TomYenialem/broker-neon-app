@@ -109,4 +109,95 @@ export class ListingsService {
       },
     };
   }
+
+  async findFeatured(filters: AllListingsFilterDto) {
+    const {
+      page = 1,
+      limit = 20,
+      minPrice,
+      maxPrice,
+      status,
+      category,
+      search,
+      province,
+      sort = 'newest',
+      currency,
+    } = filters;
+
+    const skip = (page - 1) * limit;
+    const where: any = { isFeatured: true }; // Only featured listings
+
+    // Price filter
+    if (minPrice !== undefined || maxPrice !== undefined) {
+      where.price = {};
+      if (minPrice !== undefined) where.price.gte = minPrice;
+      if (maxPrice !== undefined) where.price.lte = maxPrice;
+    }
+
+    // Other filters (same as findAll)
+    if (status) where.status = status;
+    if (category) where.category = category;
+    if (currency) where.currency = currency;
+    if (province) where.province = { contains: province, mode: 'insensitive' };
+    if (search) {
+      where.OR = [
+        { title: { contains: search, mode: 'insensitive' } },
+        { description: { contains: search, mode: 'insensitive' } },
+        { province: { contains: search, mode: 'insensitive' } },
+      ];
+    }
+
+    // Sort order
+    let orderBy: any = { createdAt: 'desc' };
+    if (sort === 'oldest') orderBy = { createdAt: 'asc' };
+    else if (sort === 'price_asc') orderBy = { price: 'asc' };
+    else if (sort === 'price_desc') orderBy = { price: 'desc' };
+
+    const [listings, total] = await Promise.all([
+      this.prisma.listing.findMany({
+        where,
+        select: {
+          id: true,
+          title: true,
+          description: true,
+          price: true,
+          currency: true,
+          status: true,
+          category: true,
+          isFeatured: true,
+          province: true,
+          municipality: true,
+          neighborhood: true,
+          images: true,
+          videos: true,
+          userId: true,
+          createdAt: true,
+          updatedAt: true,
+          user: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+            },
+          },
+        },
+        orderBy,
+        skip,
+        take: limit,
+      }),
+      this.prisma.listing.count({ where }),
+    ]);
+
+    return {
+      listings,
+      pagination: {
+        page,
+        limit,
+        total,
+        pages: Math.ceil(total / limit),
+      },
+      featuredOnly: true,
+    };
+  }
 }

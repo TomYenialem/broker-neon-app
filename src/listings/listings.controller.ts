@@ -46,4 +46,41 @@ export class ListingsController {
   findAll(@Query() filters: AllListingsFilterDto) {
     return this.listingsService.findAll(filters);
   }
+
+  @Get('featured')
+  @ApiOperation({
+    summary: 'Get featured listings only',
+    description:
+      'Retrieve only listings marked as featured (isFeatured = true). Supports all same filters as main listings endpoint.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Featured listings retrieved',
+    schema: {
+      example: {
+        listings: [
+          {
+            id: 'uuid',
+            title: 'Luxury Villa with Ocean View',
+            price: 150000000,
+            isFeatured: true,
+            category: 'HOUSE',
+            status: 'ACTIVE',
+            images: ['/uploads/house/uuid/img.jpg'],
+            videos: [],
+          },
+        ],
+        pagination: {
+          page: 1,
+          limit: 20,
+          total: 5,
+          pages: 1,
+        },
+        featuredOnly: true,
+      },
+    },
+  })
+  findFeatured(@Query() filters: AllListingsFilterDto) {
+    return this.listingsService.findFeatured(filters);
+  }
 }
