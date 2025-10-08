@@ -15,6 +15,7 @@ import { LoginDto } from './dto/login.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { UserFilterDto } from './dto/user-filter.dto';
+import { EmailService } from '../common/services/email.service';
 
 export interface JwtPayload {
   sub: string; // user id
@@ -34,6 +35,7 @@ export class AuthService {
     private prisma: PrismaService,
     private jwtService: JwtService,
     private config: ConfigService,
+    private emailService: EmailService,
   ) {}
 
   async register(dto: RegisterDto) {
@@ -69,6 +71,14 @@ export class AuthService {
         createdAt: true,
       },
     });
+
+    // Send welcome email (don't block registration if it fails)
+    try {
+      await this.emailService.sendWelcomeEmail(user.email, user.firstName);
+    } catch (error) {
+      // Log error but don't block registration
+      console.error('Failed to send welcome email:', error);
+    }
 
     // Generate tokens
     const tokens = await this.generateTokens(user.id, user.email, user.role);
@@ -253,17 +263,26 @@ export class AuthService {
       },
     });
 
-    // TODO: Send email with reset link
-    // await this.emailService.sendPasswordResetEmail(user.email, resetToken);
+    // Send password reset email
+    try {
+      await this.emailService.sendPasswordResetEmail(
+        user.email,
+        resetToken,
+        user.firstName,
+      );
+    } catch (error) {
+      // Log error but don't reveal to user (security best practice)
+      console.error('Failed to send password reset email:', error);
+    }
 
-    // For development: Log the token (REMOVE IN PRODUCTION!)
+    // For development: Also log the token
     if (this.config.get('NODE_ENV') === 'development') {
       console.log('\n🔑 Password Reset Token (DEV ONLY):');
       console.log('Email:', dto.email);
       console.log('Token:', resetToken);
       console.log(
         'Reset URL:',
-        `http://localhost:3000/reset-password?token=${resetToken}`,
+        `http://localhost:3000/auth/reset-password?token=${resetToken}`,
       );
       console.log('Expires:', expiresAt.toISOString());
       console.log('\n');
