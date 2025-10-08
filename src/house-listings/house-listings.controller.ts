@@ -31,6 +31,8 @@ import { HouseListingFilterDto } from './dto/house-listing-filter.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import type { JwtPayload } from '../auth/auth.service';
 import { FileUploadService } from '../common/services/file-upload.service';
 
 @ApiTags('House Listings')
@@ -106,7 +108,7 @@ export class HouseListingsController {
           type: 'boolean',
           example: false,
           default: false,
-          description: 'Optional - Mark as featured listing (default: false)'
+          description: 'Optional - Mark as featured listing (default: false)',
         },
         province: { type: 'string', example: 'Luanda' },
         municipality: { type: 'string', example: 'Talatona' },
@@ -250,19 +252,21 @@ OPTIONAL FIELDS:
             },
             additionalInformation: {
               type: 'string',
-              example: 'Property has approved building plans for extension. Borehole was drilled in 2024.',
-              description: 'Optional - Any additional relevant information'
+              example:
+                'Property has approved building plans for extension. Borehole was drilled in 2024.',
+              description: 'Optional - Any additional relevant information',
             },
             customFeatures: {
               type: 'object',
               example: {
-                'smartHome': true,
-                'solarPanels': '10kW system',
-                'waterFiltr': 'Whole house filtration',
-                'floorHeating': 'Master bedroom only'
+                smartHome: true,
+                solarPanels: '10kW system',
+                waterFiltr: 'Whole house filtration',
+                floorHeating: 'Master bedroom only',
               },
-              description: 'Optional - Custom key-value pairs for unique features'
-            }
+              description:
+                'Optional - Custom key-value pairs for unique features',
+            },
           },
         },
         files: {
@@ -307,6 +311,7 @@ OPTIONAL FIELDS:
     description: 'Invalid file type or size or missing required fields',
   })
   async create(
+    @CurrentUser() user: JwtPayload,
     @Body() body: any,
     @UploadedFiles() files?: Express.Multer.File[],
   ) {
@@ -372,11 +377,12 @@ OPTIONAL FIELDS:
           typeof body.price === 'string' ? parseFloat(body.price) : body.price,
         currency: body.currency || 'AOA',
         status: body.status || 'ACTIVE',
-        isFeatured: body.isFeatured === 'true' || body.isFeatured === true || false,
+        isFeatured:
+          body.isFeatured === 'true' || body.isFeatured === true || false,
         province: body.province,
         municipality: body.municipality,
         neighborhood: body.neighborhood,
-        userId: body.userId || undefined,
+        userId: user.sub,
         images: [],
         videos: [],
         houseDetails,
@@ -395,7 +401,7 @@ OPTIONAL FIELDS:
         province: body.province,
         municipality: body.municipality,
         neighborhood: body.neighborhood,
-        userId: body.userId || undefined,
+        userId: user.sub,
         images: body.images || [],
         videos: body.videos || [],
         houseDetails,

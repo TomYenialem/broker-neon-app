@@ -31,6 +31,8 @@ import { CarListingFiltersDto } from './dto/car-listing-filters.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import type { JwtPayload } from '../auth/auth.service';
 import { FileUploadService } from '../common/services/file-upload.service';
 
 @ApiTags('Car Listings')
@@ -69,7 +71,6 @@ export class CarListingsController {
           description: 'Optional - Featured listing',
         },
         province: { type: 'string', example: 'Luanda' },
-        userId: { type: 'string', example: 'user-id-optional' },
         carDetails: {
           type: 'object',
           description: `
@@ -236,6 +237,7 @@ OPTIONAL FIELDS:
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Forbidden - Requires ADMIN' })
   async create(
+    @CurrentUser() user: JwtPayload,
     @Body() body: any,
     @UploadedFiles() files?: Express.Multer.File[],
   ) {
@@ -278,6 +280,7 @@ OPTIONAL FIELDS:
       currency: body.currency || 'AOA',
       isFeatured:
         body.isFeatured === 'true' || body.isFeatured === true || false,
+      userId: user.sub,
       images: [],
       videos: [],
       carDetails,
