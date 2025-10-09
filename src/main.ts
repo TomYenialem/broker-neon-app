@@ -63,7 +63,7 @@ async function bootstrap() {
       },
       'JWT-auth',
     )
-    .addServer('http://localhost:3000', 'Development Server')
+    .addServer('http://localhost:5000', 'Development Server')
     .addServer('https://broker-app-aa17.onrender.com', 'Production Server')
     .build();
 
@@ -83,7 +83,7 @@ async function bootstrap() {
     `,
   });
 
-  const port = process.env.PORT || 3000;
+  const port = process.env.PORT || 5000;
   await app.listen(port);
   console.log(`🚀 Application is running on: http://localhost:${port}/api`);
   console.log(`📚 Swagger Documentation: http://localhost:${port}/api/docs`);

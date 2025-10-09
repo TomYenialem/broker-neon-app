@@ -75,6 +75,10 @@ font-family: 'Poppins', sans-serif;
   padding-right: 15px;
   padding-left: 15px; }
 
+  html, body {
+  direction: ltr !important;
+  text-align: left !important;
+}
 .row {
   margin-left: -15px;
   margin-right: -15px; }
@@ -14592,7 +14596,10 @@ input.cart-plus-minus-box {
     font-size: 14px; }
   [type="submit"].btn {
     padding: 12px 30px; } }
-
+html, body {
+  direction: ltr !important;
+  text-align: left !important;
+}
 /* ----------------------------------------------------
     END
 ---------------------------------------------------- */

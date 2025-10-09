@@ -12,9 +12,11 @@ export class CarListingsService {
 
   create(createCarListingDto: CreateCarListingDto) {
     const { carDetails, ...listingData } = createCarListingDto;
+    
 
     return this.prisma.listing.create({
       data: {
+        
         ...listingData,
         category: ListingCategory.CAR,
         carDetails: {
