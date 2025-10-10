@@ -1,81 +1,98 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { AllListingsFilterDto } from './dto/all-listings-filter.dto';
+import { ListingCategory, ListingStatus } from '@prisma/client';
+
+interface GetAllListingsDto {
+  page: number;
+  limit: number;
+  category?: string;
+  status?: string;
+  search?: string;
+  minPrice?: number;
+  maxPrice?: number;
+  province?: string;
+  sort?: string;
+}
 
 @Injectable()
 export class ListingsService {
   constructor(private prisma: PrismaService) {}
 
-  async findAll(filters: AllListingsFilterDto) {
+  async getAllListings(filters: GetAllListingsDto) {
     const {
-      page = 1,
-      limit = 20,
+      page,
+      limit,
+      category,
+      status,
+      search,
       minPrice,
       maxPrice,
-      status,
-      category,
-      search,
       province,
-      sort = 'newest',
-      currency,
+      sort,
     } = filters;
-
     const skip = (page - 1) * limit;
+
+    // Build where clause
     const where: any = {};
 
-    // Price filter
-    if (minPrice !== undefined || maxPrice !== undefined) {
-      where.price = {};
-      if (minPrice !== undefined) where.price.gte = minPrice;
-      if (maxPrice !== undefined) where.price.lte = maxPrice;
+    if (category) {
+      where.category = category as ListingCategory;
     }
 
-    // Status filter
-    if (status) where.status = status;
+    if (status) {
+      where.status = status as ListingStatus;
+    }
 
-    // Category filter
-    if (category) where.category = category;
-
-    // Currency filter
-    if (currency) where.currency = currency;
-
-    // Province filter
-    if (province) where.province = { contains: province, mode: 'insensitive' };
-
-    // Search filter (title, description, province)
     if (search) {
       where.OR = [
         { title: { contains: search, mode: 'insensitive' } },
         { description: { contains: search, mode: 'insensitive' } },
         { province: { contains: search, mode: 'insensitive' } },
+        { municipality: { contains: search, mode: 'insensitive' } },
       ];
     }
 
-    // Sort order
-    let orderBy: any = { createdAt: 'desc' };
-    if (sort === 'oldest') orderBy = { createdAt: 'asc' };
-    else if (sort === 'price_asc') orderBy = { price: 'asc' };
-    else if (sort === 'price_desc') orderBy = { price: 'desc' };
+    if (minPrice !== undefined) {
+      where.price = { ...where.price, gte: minPrice };
+    }
 
+    if (maxPrice !== undefined) {
+      where.price = { ...where.price, lte: maxPrice };
+    }
+
+    if (province) {
+      where.province = { contains: province, mode: 'insensitive' };
+    }
+
+    // Build orderBy clause
+    let orderBy: any = { createdAt: 'desc' };
+    if (sort) {
+      switch (sort) {
+        case 'newest':
+          orderBy = { createdAt: 'desc' };
+          break;
+        case 'oldest':
+          orderBy = { createdAt: 'asc' };
+          break;
+        case 'price_asc':
+          orderBy = { price: 'asc' };
+          break;
+        case 'price_desc':
+          orderBy = { price: 'desc' };
+          break;
+        default:
+          orderBy = { createdAt: 'desc' };
+      }
+    }
+
+    // Get listings with pagination
     const [listings, total] = await Promise.all([
       this.prisma.listing.findMany({
         where,
-        select: {
-          id: true,
-          title: true,
-          description: true,
-          price: true,
-          currency: true,
-          status: true,
-          category: true,
-          province: true,
-          municipality: true,
-          neighborhood: true,
-          images: true,
-          videos: true,
-          userId: true,
-          createdAt: true,
-          updatedAt: true,
+        skip,
+        take: limit,
+        orderBy,
+        include: {
           user: {
             select: {
               id: true,
@@ -84,120 +101,44 @@ export class ListingsService {
               email: true,
             },
           },
+          carDetails: true,
+          houseDetails: true,
+          landDetails: true,
+          machineDetails: true,
         },
-        orderBy,
-        skip,
-        take: limit,
       }),
       this.prisma.listing.count({ where }),
     ]);
 
     return {
-      listings,
-      pagination: {
+      data: listings,
+      meta: {
+        total,
         page,
         limit,
-        total,
-        pages: Math.ceil(total / limit),
-      },
-      filters: {
-        category,
-        status,
-        priceRange: { min: minPrice, max: maxPrice },
-        province,
-        search,
+        totalPages: Math.ceil(total / limit),
       },
     };
   }
 
-  async findFeatured(filters: AllListingsFilterDto) {
-    const {
-      page = 1,
-      limit = 20,
-      minPrice,
-      maxPrice,
-      status,
-      category,
-      search,
-      province,
-      sort = 'newest',
-      currency,
-    } = filters;
-
-    const skip = (page - 1) * limit;
-    const where: any = { isFeatured: true }; // Only featured listings
-
-    // Price filter
-    if (minPrice !== undefined || maxPrice !== undefined) {
-      where.price = {};
-      if (minPrice !== undefined) where.price.gte = minPrice;
-      if (maxPrice !== undefined) where.price.lte = maxPrice;
-    }
-
-    // Other filters (same as findAll)
-    if (status) where.status = status;
-    if (category) where.category = category;
-    if (currency) where.currency = currency;
-    if (province) where.province = { contains: province, mode: 'insensitive' };
-    if (search) {
-      where.OR = [
-        { title: { contains: search, mode: 'insensitive' } },
-        { description: { contains: search, mode: 'insensitive' } },
-        { province: { contains: search, mode: 'insensitive' } },
-      ];
-    }
-
-    // Sort order
-    let orderBy: any = { createdAt: 'desc' };
-    if (sort === 'oldest') orderBy = { createdAt: 'asc' };
-    else if (sort === 'price_asc') orderBy = { price: 'asc' };
-    else if (sort === 'price_desc') orderBy = { price: 'desc' };
-
-    const [listings, total] = await Promise.all([
-      this.prisma.listing.findMany({
-        where,
-        select: {
-          id: true,
-          title: true,
-          description: true,
-          price: true,
-          currency: true,
-          status: true,
-          category: true,
-          isFeatured: true,
-          province: true,
-          municipality: true,
-          neighborhood: true,
-          images: true,
-          videos: true,
-          userId: true,
-          createdAt: true,
-          updatedAt: true,
-          user: {
-            select: {
-              id: true,
-              firstName: true,
-              lastName: true,
-              email: true,
-            },
+  async getListingById(id: string) {
+    return this.prisma.listing.findUnique({
+      where: { id },
+      include: {
+        user: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+            phone: true,
           },
         },
-        orderBy,
-        skip,
-        take: limit,
-      }),
-      this.prisma.listing.count({ where }),
-    ]);
-
-    return {
-      listings,
-      pagination: {
-        page,
-        limit,
-        total,
-        pages: Math.ceil(total / limit),
+        carDetails: true,
+        houseDetails: true,
+        landDetails: true,
+        machineDetails: true,
       },
-      featuredOnly: true,
-    };
+    });
   }
 }
