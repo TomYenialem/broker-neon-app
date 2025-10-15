@@ -60,6 +60,7 @@ export class EmailService {
     } catch (error) {
       this.logger.error('Error sending password reset email:', error);
       throw error;
+      
     }
   }
 

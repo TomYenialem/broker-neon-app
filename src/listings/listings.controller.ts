@@ -87,7 +87,7 @@ export class ListingsController {
       sort,
     });
   }
-
+ 
   @Get('all')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')

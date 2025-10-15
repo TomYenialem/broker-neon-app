@@ -34,7 +34,7 @@ export class CarListingsService {
           },
         },
       },
-    });
+    })
   }
 
   async findAll(filters?: CarListingFiltersDto) {
