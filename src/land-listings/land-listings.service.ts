@@ -184,13 +184,13 @@ export class LandListingsService {
   }
 
   async remove(id: string) {
-    // Check if listing exists and is a car listing
+    // Check if listing exists and is a land listing
     const existingListing = await this.prisma.listing.findUnique({
       where: { id },
     });
 
     if (!existingListing || existingListing.category !== ListingCategory.LAND) {
-      throw new NotFoundException('Car listing not found');
+      throw new NotFoundException('Land listing not found');
     }
 
     return this.prisma.listing.delete({

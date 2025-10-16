@@ -25,6 +25,143 @@ import { ListingsService } from './listings.service';
 export class ListingsController {
   constructor(private readonly listingsService: ListingsService) {}
 
+  @Get('dashboard')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({
+    summary: 'Get dashboard statistics (ADMIN only)',
+    description:
+      'Returns comprehensive statistics including total users, total listings, and breakdown by category and status',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Dashboard statistics retrieved successfully',
+    schema: {
+      example: {
+        users: {
+          total: 150,
+          admins: 2,
+          regularUsers: 148,
+        },
+        listings: {
+          total: 250,
+          active: 200,
+          sold: 35,
+          pending: 10,
+          expired: 5,
+          featured: 15,
+        },
+        byCategory: {
+          CAR: {
+            total: 120,
+            active: 100,
+            sold: 15,
+            pending: 3,
+            expired: 2,
+          },
+          HOUSE: {
+            total: 80,
+            active: 65,
+            sold: 12,
+            pending: 2,
+            expired: 1,
+          },
+          LAND: {
+            total: 30,
+            active: 20,
+            sold: 5,
+            pending: 3,
+            expired: 2,
+          },
+          MACHINE: {
+            total: 20,
+            active: 15,
+            sold: 3,
+            pending: 2,
+            expired: 0,
+          },
+        },
+        recentListings: [
+          {
+            id: 'uuid',
+            title: 'Toyota Corolla 2020',
+            category: 'CAR',
+            price: 8000000,
+            status: 'ACTIVE',
+            createdAt: '2025-10-16T...',
+          },
+        ],
+      },
+    },
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden - Requires ADMIN role' })
+  async getDashboardStats() {
+    return this.listingsService.getDashboardStatistics();
+  }
+
+  @Get('featured')
+  @ApiOperation({
+    summary: 'Get featured listings only (Public)',
+    description:
+      'Returns only featured listings across all categories (cars, houses, land, machines) - Public access',
+  })
+  @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
+  @ApiQuery({ name: 'limit', required: false, type: Number, example: 10 })
+  @ApiQuery({
+    name: 'category',
+    required: false,
+    enum: ['CAR', 'HOUSE', 'LAND', 'MACHINE'],
+    description: 'Filter featured listings by category',
+  })
+  @ApiQuery({
+    name: 'sort',
+    required: false,
+    type: String,
+    enum: ['newest', 'oldest', 'price_asc', 'price_desc'],
+    example: 'newest',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Featured listings retrieved successfully',
+    schema: {
+      example: {
+        data: [
+          {
+            id: 'uuid',
+            title: 'Toyota Land Cruiser 2021',
+            price: 15000000,
+            currency: 'AOA',
+            category: 'CAR',
+            isFeatured: true,
+            images: ['/uploads/car/uuid/img.jpg'],
+            carDetails: { make: 'Toyota', model: 'Land Cruiser' },
+          },
+        ],
+        meta: {
+          total: 5,
+          page: 1,
+          limit: 10,
+          totalPages: 1,
+        },
+      },
+    },
+  })
+  async getFeaturedListings(
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+    @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number,
+    @Query('category') category?: string,
+    @Query('sort') sort?: string,
+  ) {
+    return this.listingsService.getFeaturedListings({
+      page,
+      limit,
+      category,
+      sort,
+    });
+  }
+
   @Get('public')
   @ApiOperation({
     summary: 'Get all active listings (Public)',

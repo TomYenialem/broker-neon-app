@@ -76,6 +76,42 @@ export class FileUploadService {
   }
 
   /**
+   * Delete a single file from listing directory
+   * @param fileUrl - File URL (e.g., /uploads/car/uuid/filename.jpg)
+   * @returns boolean - true if deleted, false if not found
+   */
+  deleteSingleFile(fileUrl: string): boolean {
+    try {
+      // Convert URL to file path (remove leading slash)
+      const filePath = `.${fileUrl}`;
+
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error(`Error deleting file ${fileUrl}:`, error);
+      return false;
+    }
+  }
+
+  /**
+   * Delete multiple files
+   * @param fileUrls - Array of file URLs
+   * @returns Number of files successfully deleted
+   */
+  deleteMultipleFiles(fileUrls: string[]): number {
+    let deletedCount = 0;
+    fileUrls.forEach((url) => {
+      if (this.deleteSingleFile(url)) {
+        deletedCount++;
+      }
+    });
+    return deletedCount;
+  }
+
+  /**
    * Get full file URL for client
    * @param relativePath - Relative file path
    * @returns Full URL

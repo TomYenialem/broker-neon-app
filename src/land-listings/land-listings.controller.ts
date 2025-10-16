@@ -422,6 +422,16 @@ FOR RESIDENTIAL/COMMERCIAL:
     @UploadedFiles() files: Express.Multer.File[],
   ) {
     if (!files?.length) throw new BadRequestException('No files provided');
+
+    // Get existing listing to delete old files
+    const listing: any = await this.landListingsService.findOne(id);
+    const oldImages = listing.images || [];
+    const oldVideos = listing.videos || [];
+
+    // Delete old physical files
+    this.fileUploadService.deleteMultipleFiles([...oldImages, ...oldVideos]);
+
+    // Upload new files
     const imgs = files.filter((f) => f.mimetype.startsWith('image/'));
     const vids = files.filter((f) => f.mimetype.startsWith('video/'));
     const images = imgs.length
@@ -430,6 +440,8 @@ FOR RESIDENTIAL/COMMERCIAL:
     const videos = vids.length
       ? this.fileUploadService.saveListingFiles(vids, id, 'land')
       : [];
+
+    // Update database
     await this.landListingsService.update(id, { images, videos } as any);
     return {
       message: 'Media replaced',
@@ -462,12 +474,19 @@ FOR RESIDENTIAL/COMMERCIAL:
     const vidDel = vids.find((v: string) => v.includes(filename));
     if (!imgDel && !vidDel)
       throw new BadRequestException(`File "${filename}" not found`);
+
     if (imgDel) {
+      // Delete physical file
+      this.fileUploadService.deleteSingleFile(imgDel);
+      // Update database
       await this.landListingsService.update(id, {
         images: imgs.filter((i: string) => !i.includes(filename)),
       } as any);
       return { message: 'Image deleted', type: 'image' };
     } else {
+      // Delete physical file
+      this.fileUploadService.deleteSingleFile(vidDel);
+      // Update database
       await this.landListingsService.update(id, {
         videos: vids.filter((v: string) => !v.includes(filename)),
       } as any);
@@ -482,6 +501,9 @@ FOR RESIDENTIAL/COMMERCIAL:
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Delete land (ADMIN only)' })
   async remove(@Param('id') id: string) {
+    // Delete all physical files for this listing
+    this.fileUploadService.deleteListingFiles(id, 'land');
+    // Delete from database
     await this.landListingsService.remove(id);
     return { message: 'Land listing deleted successfully' };
   }

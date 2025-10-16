@@ -428,6 +428,16 @@ OPTIONAL FIELDS:
     @UploadedFiles() files: Express.Multer.File[],
   ) {
     if (!files?.length) throw new BadRequestException('No files provided');
+
+    // Get existing listing to delete old files
+    const listing: any = await this.carListingsService.findOne(id);
+    const oldImages = listing.images || [];
+    const oldVideos = listing.videos || [];
+
+    // Delete old physical files
+    this.fileUploadService.deleteMultipleFiles([...oldImages, ...oldVideos]);
+
+    // Upload new files
     const imgs = files.filter((f) => f.mimetype.startsWith('image/'));
     const vids = files.filter((f) => f.mimetype.startsWith('video/'));
     const images = imgs.length
@@ -436,6 +446,8 @@ OPTIONAL FIELDS:
     const videos = vids.length
       ? this.fileUploadService.saveListingFiles(vids, id, 'car')
       : [];
+
+    // Update database
     await this.carListingsService.update(id, { images, videos } as any);
     return {
       message: 'Media replaced',
@@ -469,12 +481,19 @@ OPTIONAL FIELDS:
     const vidDel = vids.find((v: string) => v.includes(filename));
     if (!imgDel && !vidDel)
       throw new BadRequestException(`File "${filename}" not found`);
+
     if (imgDel) {
+      // Delete physical file
+      this.fileUploadService.deleteSingleFile(imgDel);
+      // Update database
       await this.carListingsService.update(id, {
         images: imgs.filter((i: string) => !i.includes(filename)),
       } as any);
       return { message: 'Image deleted', type: 'image' };
     } else {
+      // Delete physical file
+      this.fileUploadService.deleteSingleFile(vidDel);
+      // Update database
       await this.carListingsService.update(id, {
         videos: vids.filter((v: string) => !v.includes(filename)),
       } as any);
@@ -489,6 +508,9 @@ OPTIONAL FIELDS:
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Delete car (ADMIN only)' })
   async remove(@Param('id', ParseUUIDPipe) id: string) {
+    // Delete all physical files for this listing
+    this.fileUploadService.deleteListingFiles(id, 'car');
+    // Delete from database
     await this.carListingsService.remove(id);
     return { message: 'Car listing deleted successfully' };
   }

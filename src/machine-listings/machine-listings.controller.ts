@@ -415,6 +415,15 @@ OPTIONAL FIELDS:
       throw new BadRequestException('No files provided');
     }
 
+    // Get existing listing to delete old files
+    const listing: any = await this.machineListingsService.findOne(id);
+    const oldImages = listing.images || [];
+    const oldVideos = listing.videos || [];
+
+    // Delete old physical files
+    this.fileUploadService.deleteMultipleFiles([...oldImages, ...oldVideos]);
+
+    // Upload new files
     const imageFiles = files.filter((f) => f.mimetype.startsWith('image/'));
     const videoFiles = files.filter((f) => f.mimetype.startsWith('video/'));
 
@@ -427,6 +436,7 @@ OPTIONAL FIELDS:
         ? this.fileUploadService.saveListingFiles(videoFiles, id, 'machine')
         : [];
 
+    // Update database
     await this.machineListingsService.update(id, { images, videos } as any);
 
     return {
@@ -467,10 +477,16 @@ OPTIONAL FIELDS:
     }
 
     if (imgToDelete) {
+      // Delete physical file
+      this.fileUploadService.deleteSingleFile(imgToDelete);
+      // Update database
       const updated = images.filter((img: string) => !img.includes(filename));
       await this.machineListingsService.update(id, { images: updated } as any);
       return { message: 'Image deleted successfully', type: 'image' };
     } else {
+      // Delete physical file
+      this.fileUploadService.deleteSingleFile(vidToDelete);
+      // Update database
       const updated = videos.filter((vid: string) => !vid.includes(filename));
       await this.machineListingsService.update(id, { videos: updated } as any);
       return { message: 'Video deleted successfully', type: 'video' };
@@ -488,6 +504,9 @@ OPTIONAL FIELDS:
     schema: { example: { message: 'Machine listing deleted successfully' } },
   })
   async remove(@Param('id') id: string) {
+    // Delete all physical files for this listing
+    this.fileUploadService.deleteListingFiles(id, 'machine');
+    // Delete from database
     await this.machineListingsService.remove(id);
     return { message: 'Machine listing deleted successfully' };
   }
