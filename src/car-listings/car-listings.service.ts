@@ -42,6 +42,7 @@ export class CarListingsService {
       page = 1,
       limit = 10,
       search,
+      status,
       minPrice,
       maxPrice,
       province,
@@ -65,7 +66,10 @@ export class CarListingsService {
     // Build where clause
     const where: any = {
       category: ListingCategory.CAR,
-      status: ListingStatus.ACTIVE,
+      // If status is provided, use it; otherwise default to ACTIVE
+      // This keeps public endpoint showing only ACTIVE by default
+      // But allows admins to filter by any status
+      status: status || ListingStatus.ACTIVE,
     };
 
     // Price filter

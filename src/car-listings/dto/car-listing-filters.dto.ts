@@ -7,6 +7,7 @@ import {
   VehicleCondition,
   VehicleOrigin,
   CustomsStatus,
+  ListingStatus,
 } from '@prisma/client';
 
 export class CarListingFiltersDto {
@@ -25,6 +26,10 @@ export class CarListingFiltersDto {
   @IsOptional()
   @IsString({ message: 'Search must be a string' })
   search?: string;
+
+  @IsOptional()
+  @IsEnum(ListingStatus, { message: 'Status must be a valid enum value' })
+  status?: ListingStatus;
 
   @IsOptional()
   @IsNumber({}, { message: 'Minimum price must be a number' })
