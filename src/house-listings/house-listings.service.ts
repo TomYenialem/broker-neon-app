@@ -11,6 +11,7 @@ export class HouseListingsService {
 
   async create(createHouseListingDto: CreateHouseListingDto) {
     const { houseDetails, ...listingData } = createHouseListingDto;
+    console.log('🔥 Received body:');
 
     return this.prisma.listing.create({
       data: {
