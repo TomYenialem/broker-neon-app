@@ -26,6 +26,7 @@ export class LandListingsService {
             firstName: true,
             lastName: true,
             email: true,
+            phone: true,
           },
         },
       },
@@ -140,6 +141,15 @@ export class LandListingsService {
       },
       include: {
         landDetails: true,
+        user: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+            phone: true,
+          },
+        },
       },
     });
 

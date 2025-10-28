@@ -12,11 +12,9 @@ export class CarListingsService {
 
   create(createCarListingDto: CreateCarListingDto) {
     const { carDetails, ...listingData } = createCarListingDto;
-    
 
     return this.prisma.listing.create({
       data: {
-        
         ...listingData,
         category: ListingCategory.CAR,
         carDetails: {
@@ -31,10 +29,11 @@ export class CarListingsService {
             firstName: true,
             lastName: true,
             email: true,
+            phone: true,
           },
         },
       },
-    })
+    });
   }
 
   async findAll(filters?: CarListingFiltersDto) {
