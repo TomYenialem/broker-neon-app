@@ -305,6 +305,11 @@ FOR RESIDENTIAL/COMMERCIAL:
         : landDetails.distanceFromMainRoad;
     }
 
+    // Remove invalid fields that don't exist in the schema
+    if (landDetails.features !== undefined) {
+      delete landDetails.features;
+    }
+
     // Convert empty strings to null for optional fields
     const optionalStringFields = ['waterSource', 'previousUse', 'agriculturalSupport', 
       'climateInfo', 'soilType', 'zoningType', 'electricityAccess', 'waterAccess', 
