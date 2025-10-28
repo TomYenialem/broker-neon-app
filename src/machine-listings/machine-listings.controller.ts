@@ -241,6 +241,35 @@ OPTIONAL FIELDS:
       machineDetails = body.machineDetails;
     }
 
+    // Convert numeric fields from strings to numbers
+    if (machineDetails.manufactureYear !== undefined) {
+      machineDetails.manufactureYear = typeof machineDetails.manufactureYear === 'string'
+        ? parseInt(machineDetails.manufactureYear, 10)
+        : machineDetails.manufactureYear;
+    }
+    if (machineDetails.hoursOfUse !== undefined) {
+      machineDetails.hoursOfUse = typeof machineDetails.hoursOfUse === 'string'
+        ? parseFloat(machineDetails.hoursOfUse)
+        : machineDetails.hoursOfUse;
+    }
+
+    // Convert boolean strings to booleans
+    if (machineDetails.serviceHistory !== undefined) {
+      if (typeof machineDetails.serviceHistory === 'string') {
+        machineDetails.serviceHistory = machineDetails.serviceHistory === 'true';
+      }
+    }
+
+    // Convert empty strings to null for optional fields
+    const optionalStringFields = ['modelNumber', 'workingCapacity', 'specifications',
+      'reasonForSale', 'currentLocation', 'additionalInformation'];
+    
+    optionalStringFields.forEach(field => {
+      if (machineDetails[field] === '') {
+        machineDetails[field] = null;
+      }
+    });
+
     const listingData = {
       title: body.title,
       description: body.description,
