@@ -293,6 +293,46 @@ FOR RESIDENTIAL/COMMERCIAL:
       landDetails = body.landDetails;
     }
 
+    // Convert numeric fields from strings to numbers
+    if (landDetails.totalArea !== undefined) {
+      landDetails.totalArea = typeof landDetails.totalArea === 'string' 
+        ? parseFloat(landDetails.totalArea) 
+        : landDetails.totalArea;
+    }
+    if (landDetails.distanceFromMainRoad !== undefined) {
+      landDetails.distanceFromMainRoad = typeof landDetails.distanceFromMainRoad === 'string'
+        ? parseFloat(landDetails.distanceFromMainRoad)
+        : landDetails.distanceFromMainRoad;
+    }
+
+    // Convert empty strings to null for optional fields
+    const optionalStringFields = ['waterSource', 'previousUse', 'agriculturalSupport', 
+      'climateInfo', 'soilType', 'zoningType', 'electricityAccess', 'waterAccess', 
+      'sanitationAccess', 'securityInfo', 'documentType'];
+    
+    optionalStringFields.forEach(field => {
+      if (landDetails[field] === '') {
+        landDetails[field] = null;
+      }
+    });
+
+    // Convert boolean strings to booleans
+    if (landDetails.hasIrrigationSystem !== undefined) {
+      if (typeof landDetails.hasIrrigationSystem === 'string') {
+        landDetails.hasIrrigationSystem = landDetails.hasIrrigationSystem === 'true';
+      }
+    }
+    if (landDetails.soilTested !== undefined) {
+      if (typeof landDetails.soilTested === 'string') {
+        landDetails.soilTested = landDetails.soilTested === 'true';
+      }
+    }
+    if (landDetails.isDemarcated !== undefined) {
+      if (typeof landDetails.isDemarcated === 'string') {
+        landDetails.isDemarcated = landDetails.isDemarcated === 'true';
+      }
+    }
+
     const data = {
       ...body,
       price:
