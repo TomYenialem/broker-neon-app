@@ -164,6 +164,7 @@ model LandDetails {
   // Additional custom fields
   additionalInformation String?
   customFeatures        Json?
+    // features Json?
 }
 
 /* ---- CAR ---- */
@@ -187,7 +188,7 @@ model CarDetails {
   serviceHistory   Boolean?
   reasonForSelling String?
 
-  features Json
+  features Json?
   
   // Additional custom fields
   additionalInformation String?
@@ -248,6 +249,7 @@ model MachineDetails {
   // Additional custom fields
   additionalInformation String?
   customFeatures        Json?
+  
 }
 
 /* ===================== ENUMS ===================== */
