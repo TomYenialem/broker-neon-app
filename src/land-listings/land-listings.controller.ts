@@ -295,14 +295,16 @@ FOR RESIDENTIAL/COMMERCIAL:
 
     // Convert numeric fields from strings to numbers
     if (landDetails.totalArea !== undefined) {
-      landDetails.totalArea = typeof landDetails.totalArea === 'string' 
-        ? parseFloat(landDetails.totalArea) 
-        : landDetails.totalArea;
+      landDetails.totalArea =
+        typeof landDetails.totalArea === 'string'
+          ? parseFloat(landDetails.totalArea)
+          : landDetails.totalArea;
     }
     if (landDetails.distanceFromMainRoad !== undefined) {
-      landDetails.distanceFromMainRoad = typeof landDetails.distanceFromMainRoad === 'string'
-        ? parseFloat(landDetails.distanceFromMainRoad)
-        : landDetails.distanceFromMainRoad;
+      landDetails.distanceFromMainRoad =
+        typeof landDetails.distanceFromMainRoad === 'string'
+          ? parseFloat(landDetails.distanceFromMainRoad)
+          : landDetails.distanceFromMainRoad;
     }
 
     // Remove invalid fields that don't exist in the schema
@@ -311,11 +313,21 @@ FOR RESIDENTIAL/COMMERCIAL:
     }
 
     // Convert empty strings to null for optional fields
-    const optionalStringFields = ['waterSource', 'previousUse', 'agriculturalSupport', 
-      'climateInfo', 'soilType', 'zoningType', 'electricityAccess', 'waterAccess', 
-      'sanitationAccess', 'securityInfo', 'documentType'];
-    
-    optionalStringFields.forEach(field => {
+    const optionalStringFields = [
+      'waterSource',
+      'previousUse',
+      'agriculturalSupport',
+      'climateInfo',
+      'soilType',
+      'zoningType',
+      'electricityAccess',
+      'waterAccess',
+      'sanitationAccess',
+      'securityInfo',
+      'documentType',
+    ];
+
+    optionalStringFields.forEach((field) => {
       if (landDetails[field] === '') {
         landDetails[field] = null;
       }
@@ -324,7 +336,8 @@ FOR RESIDENTIAL/COMMERCIAL:
     // Convert boolean strings to booleans
     if (landDetails.hasIrrigationSystem !== undefined) {
       if (typeof landDetails.hasIrrigationSystem === 'string') {
-        landDetails.hasIrrigationSystem = landDetails.hasIrrigationSystem === 'true';
+        landDetails.hasIrrigationSystem =
+          landDetails.hasIrrigationSystem === 'true';
       }
     }
     if (landDetails.soilTested !== undefined) {

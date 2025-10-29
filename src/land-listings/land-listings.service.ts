@@ -78,11 +78,11 @@ export class LandListingsService {
       where.currency = currency;
     }
 
-    // Full-text search (title + description)
+    // Full-text search (title + description) - case-insensitive
     if (search) {
       where.OR = [
-        { title: { contains: search } },
-        { description: { contains: search } },
+        { title: { contains: search, mode: 'insensitive' } },
+        { description: { contains: search, mode: 'insensitive' } },
       ];
     }
 

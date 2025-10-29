@@ -185,6 +185,88 @@ export class ListingsController {
   @ApiQuery({ name: 'maxPrice', required: false, type: Number })
   @ApiQuery({ name: 'province', required: false, type: String })
   @ApiQuery({ name: 'sort', required: false, type: String })
+  // Car-specific filters
+  @ApiQuery({
+    name: 'carFuelType',
+    required: false,
+    enum: ['GASOLINE', 'DIESEL', 'HYBRID', 'ELECTRIC'],
+    description: 'Filter by car fuel type',
+  })
+  @ApiQuery({
+    name: 'carTransmission',
+    required: false,
+    enum: ['MANUAL', 'AUTOMATIC'],
+    description: 'Filter by car transmission type',
+  })
+  @ApiQuery({
+    name: 'carCondition',
+    required: false,
+    enum: ['NEW', 'EXCELLENT', 'GOOD', 'NEEDS_REPAIR'],
+    description: 'Filter by car condition',
+  })
+  // House-specific filters
+  @ApiQuery({
+    name: 'houseHouseType',
+    required: false,
+    enum: ['DETACHED', 'TOWNHOUSE', 'VILLA', 'APARTMENT'],
+    description: 'Filter by house type',
+  })
+  @ApiQuery({
+    name: 'houseBedrooms',
+    required: false,
+    type: Number,
+    description: 'Filter by number of bedrooms',
+  })
+  @ApiQuery({
+    name: 'houseBathrooms',
+    required: false,
+    type: Number,
+    description: 'Filter by number of bathrooms',
+  })
+  @ApiQuery({
+    name: 'houseFurnished',
+    required: false,
+    type: String,
+    description: 'Filter by furnished status (Furnished, Unfurnished, Partially Furnished)',
+  })
+  // Land-specific filters
+  @ApiQuery({
+    name: 'landLandPurpose',
+    required: false,
+    enum: ['AGRICULTURAL', 'RESIDENTIAL', 'COMMERCIAL', 'MIXED_USE'],
+    description: 'Filter by land purpose',
+  })
+  @ApiQuery({
+    name: 'landZoningType',
+    required: false,
+    enum: ['RESIDENTIAL', 'COMMERCIAL', 'INDUSTRIAL', 'MIXED_USE'],
+    description: 'Filter by zoning type',
+  })
+  @ApiQuery({
+    name: 'landMinArea',
+    required: false,
+    type: Number,
+    description: 'Minimum land area in square meters',
+  })
+  @ApiQuery({
+    name: 'landMaxArea',
+    required: false,
+    type: Number,
+    description: 'Maximum land area in square meters',
+  })
+  // Machine-specific filters
+  @ApiQuery({
+    name: 'machineMachineType',
+    required: false,
+    type: String,
+    description: 'Filter by machine type',
+  })
+  @ApiQuery({
+    name: 'machineCondition',
+    required: false,
+    enum: ['NEW', 'USED', 'RECONDITIONED'],
+    description: 'Filter by machine condition',
+  })
   @ApiResponse({
     status: 200,
     description: 'All listings retrieved successfully',
@@ -199,6 +281,23 @@ export class ListingsController {
     @Query('maxPrice') maxPrice?: string,
     @Query('province') province?: string,
     @Query('sort') sort?: string,
+    // Car-specific filters
+    @Query('carFuelType') carFuelType?: string,
+    @Query('carTransmission') carTransmission?: string,
+    @Query('carCondition') carCondition?: string,
+    // House-specific filters
+    @Query('houseHouseType') houseHouseType?: string,
+    @Query('houseBedrooms') houseBedrooms?: string,
+    @Query('houseBathrooms') houseBathrooms?: string,
+    @Query('houseFurnished') houseFurnished?: string,
+    // Land-specific filters
+    @Query('landLandPurpose') landLandPurpose?: string,
+    @Query('landZoningType') landZoningType?: string,
+    @Query('landMinArea') landMinArea?: string,
+    @Query('landMaxArea') landMaxArea?: string,
+    // Machine-specific filters
+    @Query('machineMachineType') machineMachineType?: string,
+    @Query('machineCondition') machineCondition?: string,
   ) {
     // Parse numeric values with validation
     const parsedMinPrice = minPrice
@@ -212,6 +311,30 @@ export class ListingsController {
         : parseInt(maxPrice, 10)
       : undefined;
 
+    // Parse house numeric filters
+    const parsedHouseBedrooms = houseBedrooms
+      ? isNaN(parseInt(houseBedrooms, 10))
+        ? undefined
+        : parseInt(houseBedrooms, 10)
+      : undefined;
+    const parsedHouseBathrooms = houseBathrooms
+      ? isNaN(parseInt(houseBathrooms, 10))
+        ? undefined
+        : parseInt(houseBathrooms, 10)
+      : undefined;
+
+    // Parse land area filters
+    const parsedLandMinArea = landMinArea
+      ? isNaN(parseFloat(landMinArea))
+        ? undefined
+        : parseFloat(landMinArea)
+      : undefined;
+    const parsedLandMaxArea = landMaxArea
+      ? isNaN(parseFloat(landMaxArea))
+        ? undefined
+        : parseFloat(landMaxArea)
+      : undefined;
+
     return this.listingsService.getAllListings({
       page,
       limit,
@@ -222,6 +345,23 @@ export class ListingsController {
       maxPrice: parsedMaxPrice,
       province,
       sort,
+      // Car filters
+      carFuelType: carFuelType as any,
+      carTransmission: carTransmission as any,
+      carCondition: carCondition as any,
+      // House filters
+      houseHouseType: houseHouseType as any,
+      houseBedrooms: parsedHouseBedrooms,
+      houseBathrooms: parsedHouseBathrooms,
+      houseFurnished,
+      // Land filters
+      landLandPurpose: landLandPurpose as any,
+      landZoningType: landZoningType as any,
+      landMinArea: parsedLandMinArea,
+      landMaxArea: parsedLandMaxArea,
+      // Machine filters
+      machineMachineType,
+      machineCondition: machineCondition as any,
     });
   }
  

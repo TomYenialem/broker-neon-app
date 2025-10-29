@@ -65,11 +65,12 @@ export class CarListingsService {
     // Build where clause
     const where: any = {
       category: ListingCategory.CAR,
-      // If status is provided, use it; otherwise default to ACTIVE
-      // This keeps public endpoint showing only ACTIVE by default
-      // But allows admins to filter by any status
-      status: status || ListingStatus.ACTIVE,
     };
+
+    // Status filter - only apply if provided, otherwise show all statuses
+    if (status) {
+      where.status = status;
+    }
 
     // Price filter
     if (minPrice !== undefined || maxPrice !== undefined) {
@@ -83,11 +84,11 @@ export class CarListingsService {
     if (municipality) where.municipality = { contains: municipality };
     if (neighborhood) where.neighborhood = { contains: neighborhood };
 
-    // Search in title and description
+    // Search in title and description (case-insensitive)
     if (search) {
       where.OR = [
-        { title: { contains: search } },
-        { description: { contains: search } },
+        { title: { contains: search, mode: 'insensitive' } },
+        { description: { contains: search, mode: 'insensitive' } },
       ];
     }
 

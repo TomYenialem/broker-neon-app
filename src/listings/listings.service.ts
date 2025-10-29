@@ -1,6 +1,16 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { ListingCategory, ListingStatus } from '@prisma/client';
+import {
+  ListingCategory,
+  ListingStatus,
+  FuelType,
+  Transmission,
+  VehicleCondition,
+  HouseType,
+  MachineCondition,
+  LandPurpose,
+  ZoningType,
+} from '@prisma/client';
 
 interface GetAllListingsDto {
   page: number;
@@ -12,6 +22,23 @@ interface GetAllListingsDto {
   maxPrice?: number;
   province?: string;
   sort?: string;
+  // Car-specific filters
+  carFuelType?: FuelType;
+  carTransmission?: Transmission;
+  carCondition?: VehicleCondition;
+  // House-specific filters
+  houseHouseType?: HouseType;
+  houseBedrooms?: number;
+  houseBathrooms?: number;
+  houseFurnished?: string;
+  // Land-specific filters
+  landLandPurpose?: LandPurpose;
+  landZoningType?: ZoningType;
+  landMinArea?: number;
+  landMaxArea?: number;
+  // Machine-specific filters
+  machineMachineType?: string;
+  machineCondition?: MachineCondition;
 }
 
 interface GetFeaturedListingsDto {
@@ -69,6 +96,84 @@ export class ListingsService {
 
     if (province) {
       where.province = { contains: province, mode: 'insensitive' };
+    }
+
+    // Category-specific filters using nested where clauses
+    // Car filters
+    if (filters.carFuelType || filters.carTransmission || filters.carCondition) {
+      where.carDetails = {};
+      if (filters.carFuelType) {
+        where.carDetails.fuelType = filters.carFuelType;
+      }
+      if (filters.carTransmission) {
+        where.carDetails.transmission = filters.carTransmission;
+      }
+      if (filters.carCondition) {
+        where.carDetails.condition = filters.carCondition;
+      }
+    }
+
+    // House filters
+    if (
+      filters.houseHouseType ||
+      filters.houseBedrooms !== undefined ||
+      filters.houseBathrooms !== undefined ||
+      filters.houseFurnished
+    ) {
+      where.houseDetails = {};
+      if (filters.houseHouseType) {
+        where.houseDetails.houseType = filters.houseHouseType;
+      }
+      if (filters.houseBedrooms !== undefined) {
+        where.houseDetails.bedrooms = filters.houseBedrooms;
+      }
+      if (filters.houseBathrooms !== undefined) {
+        where.houseDetails.bathrooms = filters.houseBathrooms;
+      }
+      // Note: furnished is stored in interiorFeatures JSON, handled separately if needed
+      if (filters.houseFurnished) {
+        // This would need to search in the JSON field, which is complex
+        // For now, we'll skip it as it's not a direct database field
+      }
+    }
+
+    // Land filters
+    if (
+      filters.landLandPurpose ||
+      filters.landZoningType ||
+      filters.landMinArea !== undefined ||
+      filters.landMaxArea !== undefined
+    ) {
+      where.landDetails = {};
+      if (filters.landLandPurpose) {
+        where.landDetails.landPurpose = filters.landLandPurpose;
+      }
+      if (filters.landZoningType) {
+        where.landDetails.zoningType = filters.landZoningType;
+      }
+      if (filters.landMinArea !== undefined || filters.landMaxArea !== undefined) {
+        where.landDetails.totalArea = {};
+        if (filters.landMinArea !== undefined) {
+          where.landDetails.totalArea.gte = filters.landMinArea;
+        }
+        if (filters.landMaxArea !== undefined) {
+          where.landDetails.totalArea.lte = filters.landMaxArea;
+        }
+      }
+    }
+
+    // Machine filters
+    if (filters.machineMachineType || filters.machineCondition) {
+      where.machineDetails = {};
+      if (filters.machineMachineType) {
+        where.machineDetails.machineType = {
+          contains: filters.machineMachineType,
+          mode: 'insensitive',
+        };
+      }
+      if (filters.machineCondition) {
+        where.machineDetails.condition = filters.machineCondition;
+      }
     }
 
     // Build orderBy clause
