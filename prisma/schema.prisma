@@ -269,6 +269,7 @@ enum UserRole {
 enum Currency {
   AOA
   USD
+  
 }
 
 enum ListingStatus {

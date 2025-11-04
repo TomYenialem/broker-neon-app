@@ -10,6 +10,7 @@ import { LandListingsModule } from './land-listings/land-listings.module';
 import { HouseListingsModule } from './house-listings/house-listings.module';
 import { MachineListingsModule } from './machine-listings/machine-listings.module';
 import { ListingsModule } from './listings/listings.module';
+import { TranslateModule } from './translate/translate.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { ListingsModule } from './listings/listings.module';
     LandListingsModule,
     HouseListingsModule,
     MachineListingsModule,
+    TranslateModule,
   ],
   controllers: [AppController],
   providers: [AppService],
