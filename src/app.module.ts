@@ -11,7 +11,6 @@ import { HouseListingsModule } from './house-listings/house-listings.module';
 import { MachineListingsModule } from './machine-listings/machine-listings.module';
 import { ListingsModule } from './listings/listings.module';
 import { TranslateModule } from './translate/translate.module';
-import { UploadModule } from 'uploads/upload.module';
 
 @Module({
   imports: [
@@ -27,7 +26,6 @@ import { UploadModule } from 'uploads/upload.module';
     HouseListingsModule,
     MachineListingsModule,
     TranslateModule,
-    UploadModule,
   ],
   controllers: [AppController],
   providers: [AppService],

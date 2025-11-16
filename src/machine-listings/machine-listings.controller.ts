@@ -243,28 +243,37 @@ OPTIONAL FIELDS:
 
     // Convert numeric fields from strings to numbers
     if (machineDetails.manufactureYear !== undefined) {
-      machineDetails.manufactureYear = typeof machineDetails.manufactureYear === 'string'
-        ? parseInt(machineDetails.manufactureYear, 10)
-        : machineDetails.manufactureYear;
+      machineDetails.manufactureYear =
+        typeof machineDetails.manufactureYear === 'string'
+          ? parseInt(machineDetails.manufactureYear, 10)
+          : machineDetails.manufactureYear;
     }
     if (machineDetails.hoursOfUse !== undefined) {
-      machineDetails.hoursOfUse = typeof machineDetails.hoursOfUse === 'string'
-        ? parseFloat(machineDetails.hoursOfUse)
-        : machineDetails.hoursOfUse;
+      machineDetails.hoursOfUse =
+        typeof machineDetails.hoursOfUse === 'string'
+          ? parseFloat(machineDetails.hoursOfUse)
+          : machineDetails.hoursOfUse;
     }
 
     // Convert boolean strings to booleans
     if (machineDetails.serviceHistory !== undefined) {
       if (typeof machineDetails.serviceHistory === 'string') {
-        machineDetails.serviceHistory = machineDetails.serviceHistory === 'true';
+        machineDetails.serviceHistory =
+          machineDetails.serviceHistory === 'true';
       }
     }
 
     // Convert empty strings to null for optional fields
-    const optionalStringFields = ['modelNumber', 'workingCapacity', 'specifications',
-      'reasonForSale', 'currentLocation', 'additionalInformation'];
-    
-    optionalStringFields.forEach(field => {
+    const optionalStringFields = [
+      'modelNumber',
+      'workingCapacity',
+      'specifications',
+      'reasonForSale',
+      'currentLocation',
+      'additionalInformation',
+    ];
+
+    optionalStringFields.forEach((field) => {
       if (machineDetails[field] === '') {
         machineDetails[field] = null;
       }
@@ -298,7 +307,7 @@ OPTIONAL FIELDS:
 
       const imageUrls =
         imageFiles.length > 0
-          ? this.fileUploadService.saveListingFiles(
+          ? await this.fileUploadService.saveListingFiles(
               imageFiles,
               listing.id,
               'machine',
@@ -307,7 +316,7 @@ OPTIONAL FIELDS:
 
       const videoUrls =
         videoFiles.length > 0
-          ? this.fileUploadService.saveListingFiles(
+          ? await this.fileUploadService.saveListingFiles(
               videoFiles,
               listing.id,
               'machine',
@@ -400,11 +409,19 @@ OPTIONAL FIELDS:
 
     const newImages =
       imageFiles.length > 0
-        ? this.fileUploadService.saveListingFiles(imageFiles, id, 'machine')
+        ? await this.fileUploadService.saveListingFiles(
+            imageFiles,
+            id,
+            'machine',
+          )
         : [];
     const newVideos =
       videoFiles.length > 0
-        ? this.fileUploadService.saveListingFiles(videoFiles, id, 'machine')
+        ? await this.fileUploadService.saveListingFiles(
+            videoFiles,
+            id,
+            'machine',
+          )
         : [];
 
     const allImages = [...(listing.images || []), ...newImages];
@@ -450,7 +467,10 @@ OPTIONAL FIELDS:
     const oldVideos = listing.videos || [];
 
     // Delete old physical files
-    this.fileUploadService.deleteMultipleFiles([...oldImages, ...oldVideos]);
+    await this.fileUploadService.deleteMultipleFiles([
+      ...oldImages,
+      ...oldVideos,
+    ]);
 
     // Upload new files
     const imageFiles = files.filter((f) => f.mimetype.startsWith('image/'));
@@ -458,11 +478,19 @@ OPTIONAL FIELDS:
 
     const images =
       imageFiles.length > 0
-        ? this.fileUploadService.saveListingFiles(imageFiles, id, 'machine')
+        ? await this.fileUploadService.saveListingFiles(
+            imageFiles,
+            id,
+            'machine',
+          )
         : [];
     const videos =
       videoFiles.length > 0
-        ? this.fileUploadService.saveListingFiles(videoFiles, id, 'machine')
+        ? await this.fileUploadService.saveListingFiles(
+            videoFiles,
+            id,
+            'machine',
+          )
         : [];
 
     // Update database
@@ -507,14 +535,14 @@ OPTIONAL FIELDS:
 
     if (imgToDelete) {
       // Delete physical file
-      this.fileUploadService.deleteSingleFile(imgToDelete);
+      await this.fileUploadService.deleteSingleFile(imgToDelete);
       // Update database
       const updated = images.filter((img: string) => !img.includes(filename));
       await this.machineListingsService.update(id, { images: updated } as any);
       return { message: 'Image deleted successfully', type: 'image' };
     } else {
       // Delete physical file
-      this.fileUploadService.deleteSingleFile(vidToDelete);
+      await this.fileUploadService.deleteSingleFile(vidToDelete);
       // Update database
       const updated = videos.filter((vid: string) => !vid.includes(filename));
       await this.machineListingsService.update(id, { videos: updated } as any);
@@ -534,7 +562,7 @@ OPTIONAL FIELDS:
   })
   async remove(@Param('id') id: string) {
     // Delete all physical files for this listing
-    this.fileUploadService.deleteListingFiles(id, 'machine');
+    await this.fileUploadService.deleteListingFiles(id, 'machine');
     // Delete from database
     await this.machineListingsService.remove(id);
     return { message: 'Machine listing deleted successfully' };

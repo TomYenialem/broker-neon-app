@@ -1,8 +1,5 @@
-import { diskStorage } from 'multer';
-import { extname } from 'path';
-import { v4 as uuidv4 } from 'uuid';
+import { memoryStorage } from 'multer';
 import { BadRequestException } from '@nestjs/common';
-import * as fs from 'fs';
 
 // Allowed file types
 const IMAGE_MIME_TYPES = [
@@ -25,30 +22,7 @@ const MAX_IMAGE_SIZE = 10 * 1024 * 1024; // 10MB
 const MAX_VIDEO_SIZE = 100 * 1024 * 1024; // 100MB
 
 export const multerConfig = {
-  storage: diskStorage({
-    destination: (req, file, cb) => {
-      // Create uploads directory if it doesn't exist
-      const uploadDir = './uploads';
-      if (!fs.existsSync(uploadDir)) {
-        fs.mkdirSync(uploadDir, { recursive: true });
-      }
-
-      // Create category-specific directory
-      const category = req.body.category || 'temp';
-      const categoryDir = `${uploadDir}/${category.toLowerCase()}`;
-      if (!fs.existsSync(categoryDir)) {
-        fs.mkdirSync(categoryDir, { recursive: true });
-      }
-
-      cb(null, categoryDir);
-    },
-    filename: (req, file, cb) => {
-      // Generate unique filename
-      const uniqueSuffix = `${Date.now()}-${uuidv4()}`;
-      const ext = extname(file.originalname);
-      cb(null, `${uniqueSuffix}${ext}`);
-    },
-  }),
+  storage: memoryStorage(), // Use memory storage for Cloudinary uploads
   fileFilter: (req, file, cb) => {
     if (!ALLOWED_MIME_TYPES.includes(file.mimetype)) {
       return cb(
@@ -89,46 +63,7 @@ export const videoFileFilter = (req, file, cb) => {
   cb(null, true);
 };
 
-// Move uploaded files to listing-specific folder after listing creation
-export function moveFilesToListingFolder(
-  files: Express.Multer.File[],
-  listingId: string,
-  category: string,
-): string[] {
-  const listingDir = `./uploads/${category.toLowerCase()}/${listingId}`;
-
-  // Create listing directory
-  if (!fs.existsSync(listingDir)) {
-    fs.mkdirSync(listingDir, { recursive: true });
-  }
-
-  const filePaths: string[] = [];
-
-  files.forEach((file) => {
-    const newPath = `${listingDir}/${file.filename}`;
-
-    // Move file from temp category folder to listing folder
-    fs.renameSync(file.path, newPath);
-
-    // Return relative URL path
-    filePaths.push(
-      `/uploads/${category.toLowerCase()}/${listingId}/${file.filename}`,
-    );
-  });
-
-  return filePaths;
-}
-
-// Delete listing folder and all files
-export function deleteListingFolder(listingId: string, category: string): void {
-  const listingDir = `./uploads/${category.toLowerCase()}/${listingId}`;
-
-  if (fs.existsSync(listingDir)) {
-    fs.rmSync(listingDir, { recursive: true, force: true });
-  }
-}
-
-// Generate file URL for client
+// Generate file URL for client (backward compatibility)
 export function generateFileUrl(filePath: string, baseUrl: string): string {
   return `${baseUrl}${filePath}`;
 }

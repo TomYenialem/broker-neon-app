@@ -370,10 +370,18 @@ FOR RESIDENTIAL/COMMERCIAL:
       const imgs = files.filter((f) => f.mimetype.startsWith('image/'));
       const vids = files.filter((f) => f.mimetype.startsWith('video/'));
       const imageUrls = imgs.length
-        ? this.fileUploadService.saveListingFiles(imgs, listing.id, 'land')
+        ? await this.fileUploadService.saveListingFiles(
+            imgs,
+            listing.id,
+            'land',
+          )
         : [];
       const videoUrls = vids.length
-        ? this.fileUploadService.saveListingFiles(vids, listing.id, 'land')
+        ? await this.fileUploadService.saveListingFiles(
+            vids,
+            listing.id,
+            'land',
+          )
         : [];
       const updated = await this.landListingsService.update(listing.id, {
         images: imageUrls,
@@ -445,10 +453,10 @@ FOR RESIDENTIAL/COMMERCIAL:
     const imgs = files.filter((f) => f.mimetype.startsWith('image/'));
     const vids = files.filter((f) => f.mimetype.startsWith('video/'));
     const newImgs = imgs.length
-      ? this.fileUploadService.saveListingFiles(imgs, id, 'land')
+      ? await this.fileUploadService.saveListingFiles(imgs, id, 'land')
       : [];
     const newVids = vids.length
-      ? this.fileUploadService.saveListingFiles(vids, id, 'land')
+      ? await this.fileUploadService.saveListingFiles(vids, id, 'land')
       : [];
     await this.landListingsService.update(id, {
       images: [...(listing.images || []), ...newImgs],
@@ -487,16 +495,19 @@ FOR RESIDENTIAL/COMMERCIAL:
     const oldVideos = listing.videos || [];
 
     // Delete old physical files
-    this.fileUploadService.deleteMultipleFiles([...oldImages, ...oldVideos]);
+    await this.fileUploadService.deleteMultipleFiles([
+      ...oldImages,
+      ...oldVideos,
+    ]);
 
     // Upload new files
     const imgs = files.filter((f) => f.mimetype.startsWith('image/'));
     const vids = files.filter((f) => f.mimetype.startsWith('video/'));
     const images = imgs.length
-      ? this.fileUploadService.saveListingFiles(imgs, id, 'land')
+      ? await this.fileUploadService.saveListingFiles(imgs, id, 'land')
       : [];
     const videos = vids.length
-      ? this.fileUploadService.saveListingFiles(vids, id, 'land')
+      ? await this.fileUploadService.saveListingFiles(vids, id, 'land')
       : [];
 
     // Update database
@@ -535,7 +546,7 @@ FOR RESIDENTIAL/COMMERCIAL:
 
     if (imgDel) {
       // Delete physical file
-      this.fileUploadService.deleteSingleFile(imgDel);
+      await this.fileUploadService.deleteSingleFile(imgDel);
       // Update database
       await this.landListingsService.update(id, {
         images: imgs.filter((i: string) => !i.includes(filename)),
@@ -543,7 +554,7 @@ FOR RESIDENTIAL/COMMERCIAL:
       return { message: 'Image deleted', type: 'image' };
     } else {
       // Delete physical file
-      this.fileUploadService.deleteSingleFile(vidDel);
+      await this.fileUploadService.deleteSingleFile(vidDel);
       // Update database
       await this.landListingsService.update(id, {
         videos: vids.filter((v: string) => !v.includes(filename)),
@@ -560,7 +571,7 @@ FOR RESIDENTIAL/COMMERCIAL:
   @ApiOperation({ summary: 'Delete land (ADMIN only)' })
   async remove(@Param('id') id: string) {
     // Delete all physical files for this listing
-    this.fileUploadService.deleteListingFiles(id, 'land');
+    await this.fileUploadService.deleteListingFiles(id, 'land');
     // Delete from database
     await this.landListingsService.remove(id);
     return { message: 'Land listing deleted successfully' };

@@ -294,11 +294,19 @@ OPTIONAL FIELDS:
 
       const imageUrls =
         imgs.length > 0
-          ? this.fileUploadService.saveListingFiles(imgs, listing.id, 'car')
+          ? await this.fileUploadService.saveListingFiles(
+              imgs,
+              listing.id,
+              'car',
+            )
           : [];
       const videoUrls =
         vids.length > 0
-          ? this.fileUploadService.saveListingFiles(vids, listing.id, 'car')
+          ? await this.fileUploadService.saveListingFiles(
+              vids,
+              listing.id,
+              'car',
+            )
           : [];
 
       const updated = await this.carListingsService.update(listing.id, {
@@ -390,10 +398,10 @@ OPTIONAL FIELDS:
     const imgs = files.filter((f) => f.mimetype.startsWith('image/'));
     const vids = files.filter((f) => f.mimetype.startsWith('video/'));
     const newImgs = imgs.length
-      ? this.fileUploadService.saveListingFiles(imgs, id, 'car')
+      ? await this.fileUploadService.saveListingFiles(imgs, id, 'car')
       : [];
     const newVids = vids.length
-      ? this.fileUploadService.saveListingFiles(vids, id, 'car')
+      ? await this.fileUploadService.saveListingFiles(vids, id, 'car')
       : [];
     await this.carListingsService.update(id, {
       images: [...(listing.images || []), ...newImgs],
@@ -435,16 +443,19 @@ OPTIONAL FIELDS:
     const oldVideos = listing.videos || [];
 
     // Delete old physical files
-    this.fileUploadService.deleteMultipleFiles([...oldImages, ...oldVideos]);
+    await this.fileUploadService.deleteMultipleFiles([
+      ...oldImages,
+      ...oldVideos,
+    ]);
 
     // Upload new files
     const imgs = files.filter((f) => f.mimetype.startsWith('image/'));
     const vids = files.filter((f) => f.mimetype.startsWith('video/'));
     const images = imgs.length
-      ? this.fileUploadService.saveListingFiles(imgs, id, 'car')
+      ? await this.fileUploadService.saveListingFiles(imgs, id, 'car')
       : [];
     const videos = vids.length
-      ? this.fileUploadService.saveListingFiles(vids, id, 'car')
+      ? await this.fileUploadService.saveListingFiles(vids, id, 'car')
       : [];
 
     // Update database
@@ -484,7 +495,7 @@ OPTIONAL FIELDS:
 
     if (imgDel) {
       // Delete physical file
-      this.fileUploadService.deleteSingleFile(imgDel);
+      await this.fileUploadService.deleteSingleFile(imgDel);
       // Update database
       await this.carListingsService.update(id, {
         images: imgs.filter((i: string) => !i.includes(filename)),
@@ -492,7 +503,7 @@ OPTIONAL FIELDS:
       return { message: 'Image deleted', type: 'image' };
     } else {
       // Delete physical file
-      this.fileUploadService.deleteSingleFile(vidDel);
+      await this.fileUploadService.deleteSingleFile(vidDel);
       // Update database
       await this.carListingsService.update(id, {
         videos: vids.filter((v: string) => !v.includes(filename)),
@@ -509,7 +520,7 @@ OPTIONAL FIELDS:
   @ApiOperation({ summary: 'Delete car (ADMIN only)' })
   async remove(@Param('id', ParseUUIDPipe) id: string) {
     // Delete all physical files for this listing
-    this.fileUploadService.deleteListingFiles(id, 'car');
+    await this.fileUploadService.deleteListingFiles(id, 'car');
     // Delete from database
     await this.carListingsService.remove(id);
     return { message: 'Car listing deleted successfully' };

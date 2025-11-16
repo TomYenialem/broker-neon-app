@@ -146,11 +146,19 @@ export class HouseListingsController {
 
       const imageUrls =
         imgs.length > 0
-          ? this.fileUploadService.saveListingFiles(imgs, listing.id, 'house')
+          ? await this.fileUploadService.saveListingFiles(
+              imgs,
+              listing.id,
+              'house',
+            )
           : [];
       const videoUrls =
         vids.length > 0
-          ? this.fileUploadService.saveListingFiles(vids, listing.id, 'house')
+          ? await this.fileUploadService.saveListingFiles(
+              vids,
+              listing.id,
+              'house',
+            )
           : [];
 
       const updated = await this.houseListingsService.update(listing.id, {
@@ -243,10 +251,10 @@ export class HouseListingsController {
     const imgs = files.filter((f) => f.mimetype.startsWith('image/'));
     const vids = files.filter((f) => f.mimetype.startsWith('video/'));
     const newImgs = imgs.length
-      ? this.fileUploadService.saveListingFiles(imgs, id, 'house')
+      ? await this.fileUploadService.saveListingFiles(imgs, id, 'house')
       : [];
     const newVids = vids.length
-      ? this.fileUploadService.saveListingFiles(vids, id, 'house')
+      ? await this.fileUploadService.saveListingFiles(vids, id, 'house')
       : [];
     await this.houseListingsService.update(id, {
       images: [...(listing.images || []), ...newImgs],
@@ -288,16 +296,19 @@ export class HouseListingsController {
     const oldVideos = listing.videos || [];
 
     // Delete old physical files
-    this.fileUploadService.deleteMultipleFiles([...oldImages, ...oldVideos]);
+    await this.fileUploadService.deleteMultipleFiles([
+      ...oldImages,
+      ...oldVideos,
+    ]);
 
     // Upload new files
     const imgs = files.filter((f) => f.mimetype.startsWith('image/'));
     const vids = files.filter((f) => f.mimetype.startsWith('video/'));
     const images = imgs.length
-      ? this.fileUploadService.saveListingFiles(imgs, id, 'house')
+      ? await this.fileUploadService.saveListingFiles(imgs, id, 'house')
       : [];
     const videos = vids.length
-      ? this.fileUploadService.saveListingFiles(vids, id, 'house')
+      ? await this.fileUploadService.saveListingFiles(vids, id, 'house')
       : [];
 
     // Update database
@@ -337,7 +348,7 @@ export class HouseListingsController {
 
     if (imgDel) {
       // Delete physical file
-      this.fileUploadService.deleteSingleFile(imgDel);
+      await this.fileUploadService.deleteSingleFile(imgDel);
       // Update database
       await this.houseListingsService.update(id, {
         images: imgs.filter((i: string) => !i.includes(filename)),
@@ -345,7 +356,7 @@ export class HouseListingsController {
       return { message: 'Image deleted', type: 'image' };
     } else {
       // Delete physical file
-      this.fileUploadService.deleteSingleFile(vidDel);
+      await this.fileUploadService.deleteSingleFile(vidDel);
       // Update database
       await this.houseListingsService.update(id, {
         videos: vids.filter((v: string) => !v.includes(filename)),
@@ -373,7 +384,7 @@ export class HouseListingsController {
   @ApiResponse({ status: 404, description: 'House listing not found' })
   async remove(@Param('id') id: string) {
     // Delete all physical files for this listing
-    this.fileUploadService.deleteListingFiles(id, 'house');
+    await this.fileUploadService.deleteListingFiles(id, 'house');
     // Delete from database
     await this.houseListingsService.remove(id);
     return {
