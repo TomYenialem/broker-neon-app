@@ -376,9 +376,9 @@ enum ConstructionQuality {
 }
 
 enum WaterSource {
-  PUBLIC_TANK
+  PUBLIC_NETWORK
   PRIVATE_WELL
- 
+  BOTH
 }
 
 enum MachineCondition {

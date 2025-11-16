@@ -2,97 +2,51 @@
 import { Injectable } from '@nestjs/common';
 import axios from 'axios';
 
-interface TranslationCache {
-  [key: string]: string;
-}
-
 @Injectable()
 export class TranslateService {
-  private cache: TranslationCache = {};
-  private readonly CACHE_PREFIX = 'translate';
+  private cache = new Map<string, string>();
 
   /**
-   * Generate cache key
-   */
-  private getCacheKey(text: string, to: string): string {
-    return `${this.CACHE_PREFIX}:${to}:${text}`;
-  }
-
-  /**
-   * Translate any text from English (en) to a target language
+   * Translate any text from a source language to a target language
    * @param text string to translate
-   * @param to target language code, e.g., 'pt', 'zh'
-   * @param source source language code, default 'en'
+   * @param to target language code, e.g., 'ar', 'pt', 'zh'
+   * @param source source language code, defaults to 'en'
    * @returns translated string
    */
-  async translate(text: string, to: string, source: string = 'en'): Promise<string> {
-    // If target language is English, return original text
-    if (to === 'en') {
-      return text;
-    }
+  async translate(
+    text: string,
+    to: string,
+    source: string = 'en',
+  ): Promise<string> {
+    const cacheKey = `${source}:${to}:${text}`;
 
     // Check cache first
-    const cacheKey = this.getCacheKey(text, to);
-    if (this.cache[cacheKey]) {
-      return this.cache[cacheKey];
+    if (this.cache.has(cacheKey)) {
+      return this.cache.get(cacheKey)!;
     }
 
     try {
-      const response = await axios.post(
-        'https://libretranslate.de/translate',
-        {
-          q: text,
-          source,
-          target: to,
-          format: 'text',
-        },
-        {
-          timeout: 10000, // 10s timeout
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          validateStatus: (status) => status === 200,
-        },
-      );
+      const response = await axios.post('https://libretranslate.de/translate', {
+        q: text,
+        source: source,
+        target: to,
+        format: 'text',
+      });
 
-      // Validate response structure
-      if (
-        !response.data ||
-        typeof response.data.translatedText !== 'string'
-      ) {
-        console.error('Invalid translation response structure');
-        return text;
-      }
-
-      const translatedText = response.data.translatedText;
-
-      // Store in cache
-      this.cache[cacheKey] = translatedText;
-
-      return translatedText;
+      const translated = response.data.translatedText;
+      this.cache.set(cacheKey, translated);
+      return translated;
     } catch (error) {
-      if (axios.isAxiosError(error)) {
-        if (error.code === 'ECONNABORTED') {
-          console.error('Translation request timeout');
-        } else if (error.response) {
-          console.error(
-            `Translation API error: ${error.response.status} ${error.response.statusText}`,
-          );
-        } else {
-          console.error('Translation error:', error.message);
-        }
-      } else {
-        console.error('Unexpected translation error:', error);
-      }
+      console.error('Translation error:', error.message);
       return text; // fallback: return original text
     }
   }
 
   /**
-   * Batch translate multiple texts
+   * Translate multiple texts in batch
    * @param texts array of strings to translate
    * @param to target language code
-   * @param source source language code, default 'en'
+   * @param source source language code, defaults to 'en'
    * @returns array of translated strings
    */
   async translateBatch(
@@ -100,36 +54,27 @@ export class TranslateService {
     to: string,
     source: string = 'en',
   ): Promise<string[]> {
-    // If target language is English, return original texts
-    if (to === 'en') {
-      return texts;
-    }
-
-    const translations: string[] = [];
-    
-    for (const text of texts) {
-      const translated = await this.translate(text, to, source);
-      translations.push(translated);
-    }
-
+    const translations = await Promise.all(
+      texts.map((text) => this.translate(text, to, source)),
+    );
     return translations;
   }
 
   /**
-   * Clear translation cache
+   * Get cache statistics
+   * @returns object with cache size and keys
    */
-  clearCache(): void {
-    this.cache = {};
+  getCacheStats(): { size: number; keys: string[] } {
+    return {
+      size: this.cache.size,
+      keys: Array.from(this.cache.keys()),
+    };
   }
 
   /**
-   * Get cache statistics
+   * Clear the translation cache
    */
-  getCacheStats(): { size: number; keys: string[] } {
-    const keys = Object.keys(this.cache);
-    return {
-      size: keys.length,
-      keys: keys.slice(0, 10), // Return first 10 keys as sample
-    };
+  clearCache(): void {
+    this.cache.clear();
   }
 }
