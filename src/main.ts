@@ -7,12 +7,11 @@ import { join } from 'path';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
+app.enableCors({
+  origin: ['http://localhost:3000', 'https://plancabrokers.vercel.app'],
+  credentials: true,
+});
 
-  // Enable CORS
-  app.enableCors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:3000'||'https://plancabrokers.vercel.app',
-    credentials: true,
-  });
 
   // Enable validation pipes globally
   app.useGlobalPipes(
@@ -84,7 +83,7 @@ async function bootstrap() {
     `,
   });
 
-  const port = process.env.PORT || 5000;
+  const port = process.env.PORT || 3001;
   await app.listen(port);
   console.log(`🚀 Application is running on: http://localhost:${port}/api`);
   console.log(`📚 Swagger Documentation: http://localhost:${port}/api/docs`);
