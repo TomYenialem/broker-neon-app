@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider          = "postgres"
+  provider          = "postgresql"
   url               = env("DATABASE_URL")
   shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
 }
@@ -269,7 +269,6 @@ enum UserRole {
 enum Currency {
   AOA
   USD
-  
 }
 
 enum ListingStatus {
@@ -391,5 +390,5 @@ enum SparePartsAvailability {
   EASILY_AVAILABLE
   AVAILABLE
   DIFFICULT
-  NOT_AVAILABLE
+  NOT_AVAILABLE
 }
