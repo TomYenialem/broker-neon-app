@@ -10,7 +10,7 @@ import {
   Min,
   ValidateNested,
 } from 'class-validator';
-import { Type } from 'class-transformer';
+import { Type, Transform } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   Currency,
@@ -35,36 +35,49 @@ export class HouseDetailsDto {
     type: Number,
   })
   @IsOptional()
+  @Transform(({ value }) => (value === '' || value === null ? undefined : value))
+  @Type(() => Number)
   @IsNumber()
   @Min(0)
   plotSize?: number;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: 'Living area in square meters',
     example: 350,
     type: Number,
   })
+  @IsOptional()
+  @Transform(({ value }) => (value === '' || value === null ? undefined : value))
+  @Type(() => Number)
   @IsNumber()
   @Min(0)
-  livingArea: number;
+  livingArea?: number;
 
   @ApiProperty({
     description: 'Number of bedrooms',
     example: 4,
     type: Number,
   })
+  @IsOptional()
+  @Transform(({ value }) => (value === '' || value === null ? undefined : value))
+  @Transform(({ value }) => (value === '' || value === null ? undefined : value))
+  @Type(() => Number)
   @IsInt()
   @Min(0)
-  bedrooms: number;
+  bedrooms?: number;
 
   @ApiProperty({
     description: 'Number of bathrooms',
     example: 3,
     type: Number,
   })
+  @IsOptional()
+  @Transform(({ value }) => (value === '' || value === null ? undefined : value))
+  @Transform(({ value }) => (value === '' || value === null ? undefined : value))
+  @Type(() => Number)
   @IsInt()
   @Min(0)
-  bathrooms: number;
+  bathrooms?: number;
 
   @ApiProperty({
     description: 'Construction quality/condition',
@@ -80,6 +93,10 @@ export class HouseDetailsDto {
     example: WaterSource.PUBLIC_NETWORK,
   })
   @IsOptional()
+  @Transform(({ value }) => {
+    if (value === '' || value === null || value === undefined) return undefined;
+    return typeof value === 'string' ? value.toUpperCase() : value;
+  })
   @IsEnum(WaterSource)
   waterSource?: WaterSource;
 
@@ -155,6 +172,8 @@ export class HouseDetailsDto {
     type: Number,
   })
   @IsOptional()
+  @Transform(({ value }) => (value === '' || value === null ? undefined : value))
+  @Type(() => Number)
   @IsNumber()
   @Min(0)
   distanceToCityCenter?: number;
@@ -165,6 +184,8 @@ export class HouseDetailsDto {
     type: Number,
   })
   @IsOptional()
+  @Transform(({ value }) => (value === '' || value === null ? undefined : value))
+  @Type(() => Number)
   @IsNumber()
   @Min(0)
   distanceToSchools?: number;
@@ -175,6 +196,8 @@ export class HouseDetailsDto {
     type: Number,
   })
   @IsOptional()
+  @Transform(({ value }) => (value === '' || value === null ? undefined : value))
+  @Type(() => Number)
   @IsNumber()
   @Min(0)
   distanceToHospitals?: number;
@@ -185,6 +208,8 @@ export class HouseDetailsDto {
     type: Number,
   })
   @IsOptional()
+  @Transform(({ value }) => (value === '' || value === null ? undefined : value))
+  @Type(() => Number)
   @IsNumber()
   @Min(0)
   distanceToSupermarkets?: number;
@@ -234,9 +259,22 @@ export class CreateHouseListingDto {
     example: 85000000,
     type: Number,
   })
+  @IsOptional()
+  @Transform(({ value }) => (value === '' || value === null ? undefined : value))
+  @Type(() => Number)
   @IsNumber()
   @Min(0)
-  price: number;
+  price?: number;
+
+  @ApiPropertyOptional({
+    description:
+      'Price as free text (e.g., "Negotiable" or "Contact for price")',
+    example: 'Sob consulta',
+    type: String,
+  })
+  @IsOptional()
+  @IsString()
+  priceText?: string;
 
   @ApiPropertyOptional({
     description: 'Currency',

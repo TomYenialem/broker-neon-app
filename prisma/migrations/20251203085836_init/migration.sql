@@ -1,0 +1,11 @@
+-- AlterTable
+ALTER TABLE "CarDetails" ALTER COLUMN "make" DROP NOT NULL,
+ALTER COLUMN "model" DROP NOT NULL;
+
+-- AlterTable
+ALTER TABLE "HouseDetails" ALTER COLUMN "bedrooms" DROP NOT NULL,
+ALTER COLUMN "bathrooms" DROP NOT NULL;
+
+-- AlterTable
+ALTER TABLE "LandDetails" ALTER COLUMN "totalArea" DROP NOT NULL,
+ALTER COLUMN "areaUnit" DROP NOT NULL;

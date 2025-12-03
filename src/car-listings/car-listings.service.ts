@@ -11,11 +11,14 @@ export class CarListingsService {
   constructor(private prisma: PrismaService) {}
 
   create(createCarListingDto: CreateCarListingDto) {
-    const { carDetails, ...listingData } = createCarListingDto;
+    const { carDetails, price, priceText, ...rest } =
+      createCarListingDto as any;
 
     return this.prisma.listing.create({
       data: {
-        ...listingData,
+        ...rest,
+        price: price === undefined || price === null ? undefined : price,
+        priceText: priceText,
         category: ListingCategory.CAR,
         carDetails: {
           create: carDetails,
@@ -201,12 +204,17 @@ export class CarListingsService {
       throw new NotFoundException('Car listing not found');
     }
 
-    const { carDetails, ...listingData } = updateCarListingDto;
+    const { carDetails, price, priceText, ...listingData } =
+      updateCarListingDto as any;
 
     return this.prisma.listing.update({
       where: { id },
       data: {
         ...listingData,
+        price:
+          price === undefined || price === null ? existingListing.price : price,
+        priceText:
+          priceText === undefined ? existingListing.priceText : priceText,
         ...(carDetails && {
           carDetails: {
             update: carDetails,

@@ -9,10 +9,13 @@ import { LandListingFilterDto } from './dto/land-listing-filter.dto';
 export class LandListingsService {
   constructor(private prisma: PrismaService) {}
   create(createLandListingDto: CreateLandListingDto) {
-    const { landDetails, ...listingData } = createLandListingDto;
+    const { landDetails, price, priceText, ...listingData } =
+      createLandListingDto as any;
     return this.prisma.listing.create({
       data: {
         ...listingData,
+        price: price === undefined || price === null ? undefined : price,
+        priceText: priceText,
         category: ListingCategory.LAND,
         landDetails: {
           create: landDetails,
@@ -168,11 +171,16 @@ export class LandListingsService {
     if (!existingListing || existingListing.category !== ListingCategory.LAND) {
       throw new NotFoundException('Land listing not found');
     }
-    const { landDetails, ...listingData } = updateLandListingDto;
+    const { landDetails, price, priceText, ...listingData } =
+      updateLandListingDto as any;
     return this.prisma.listing.update({
       where: { id },
       data: {
         ...listingData,
+        price:
+          price === undefined || price === null ? existingListing.price : price,
+        priceText:
+          priceText === undefined ? existingListing.priceText : priceText,
         ...(landDetails && {
           landDetails: {
             update: landDetails,

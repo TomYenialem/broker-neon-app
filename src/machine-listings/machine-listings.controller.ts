@@ -58,11 +58,20 @@ export class MachineListingsController {
     description: 'Machine listing data - JSON or form-data',
     schema: {
       type: 'object',
-      required: ['title', 'price', 'machineDetails'],
+      required: ['title', 'machineDetails'],
       properties: {
         title: { type: 'string', example: 'Caterpillar 320D Excavator 2015' },
         description: { type: 'string', example: 'Well maintained excavator' },
-        price: { type: 'number', example: 45000 },
+        price: {
+          type: 'number',
+          example: 45000,
+          description: 'Optional if priceText provided',
+        },
+        priceText: {
+          type: 'string',
+          example: 'Negotiable / By contract',
+          description: 'Optional textual price',
+        },
         currency: { type: 'string', enum: ['AOA', 'USD'], default: 'USD' },
         isFeatured: {
           type: 'boolean',
@@ -217,12 +226,18 @@ OPTIONAL FIELDS:
 
     const missingFields: string[] = [];
     if (!body.title) missingFields.push('title');
-    if (!body.price && body.price !== 0) missingFields.push('price');
     if (!body.machineDetails) missingFields.push('machineDetails');
-
+    const hasNumericPrice =
+      body.price !== undefined && body.price !== null && body.price !== '';
+    const hasTextPrice =
+      body.priceText !== undefined &&
+      body.priceText !== null &&
+      body.priceText !== '';
+    if (!hasNumericPrice && !hasTextPrice)
+      missingFields.push('price or priceText');
     if (missingFields.length > 0) {
       throw new BadRequestException(
-        `Missing required fields: ${missingFields.join(', ')}. Please provide these fields to create a machine listing.`,
+        `Missing required fields: ${missingFields.join(', ')}. Provide either numeric price or priceText.`,
       );
     }
 
@@ -279,11 +294,16 @@ OPTIONAL FIELDS:
       }
     });
 
-    const listingData = {
+    const parsedPrice = hasNumericPrice
+      ? typeof body.price === 'string'
+        ? parseFloat(body.price)
+        : body.price
+      : undefined;
+    const listingData: any = {
       title: body.title,
       description: body.description,
-      price:
-        typeof body.price === 'string' ? parseFloat(body.price) : body.price,
+      price: Number.isFinite(parsedPrice) ? parsedPrice : undefined,
+      priceText: hasTextPrice ? body.priceText : undefined,
       currency: body.currency || 'AOA',
       status: body.status || 'ACTIVE',
       isFeatured:

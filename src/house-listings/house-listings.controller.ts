@@ -58,11 +58,20 @@ export class HouseListingsController {
     description: 'House listing data - JSON or form-data',
     schema: {
       type: 'object',
-      required: ['title', 'price', 'houseDetails'],
+      required: ['title', 'houseDetails'],
       properties: {
         title: { type: 'string', example: 'Modern Villa in Talatona' },
         description: { type: 'string', example: 'Beautiful 4-bedroom villa' },
-        price: { type: 'number', example: 25000000 },
+        price: {
+          type: 'number',
+          example: 25000000,
+          description: 'Optional if priceText provided',
+        },
+        priceText: {
+          type: 'string',
+          example: 'Negotiable / By contract',
+          description: 'Optional textual price',
+        },
         currency: { type: 'string', enum: ['AOA', 'USD'], default: 'AOA' },
         isFeatured: {
           type: 'boolean',
@@ -102,11 +111,17 @@ export class HouseListingsController {
 
     const missing: string[] = [];
     if (!body.title) missing.push('title');
-    if (!body.price && body.price !== 0) missing.push('price');
     if (!body.houseDetails) missing.push('houseDetails');
+    const hasNumericPrice =
+      body.price !== undefined && body.price !== null && body.price !== '';
+    const hasTextPrice =
+      body.priceText !== undefined &&
+      body.priceText !== null &&
+      body.priceText !== '';
+    if (!hasNumericPrice && !hasTextPrice) missing.push('price or priceText');
     if (missing.length > 0) {
       throw new BadRequestException(
-        `Missing required fields: ${missing.join(', ')}. Please provide these fields to create a house listing.`,
+        `Missing required fields: ${missing.join(', ')}. Provide either numeric price or priceText.`,
       );
     }
 
@@ -125,10 +140,15 @@ export class HouseListingsController {
       houseDetails = body.houseDetails;
     }
 
-    const data = {
+    const parsedPrice = hasNumericPrice
+      ? typeof body.price === 'string'
+        ? parseFloat(body.price)
+        : body.price
+      : undefined;
+    const data: any = {
       ...body,
-      price:
-        typeof body.price === 'string' ? parseFloat(body.price) : body.price,
+      price: Number.isFinite(parsedPrice) ? parsedPrice : undefined,
+      priceText: hasTextPrice ? body.priceText : undefined,
       currency: body.currency || 'AOA',
       isFeatured:
         body.isFeatured === 'true' || body.isFeatured === true || false,

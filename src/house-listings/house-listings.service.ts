@@ -10,12 +10,15 @@ export class HouseListingsService {
   constructor(private prisma: PrismaService) {}
 
   async create(createHouseListingDto: CreateHouseListingDto) {
-    const { houseDetails, ...listingData } = createHouseListingDto;
+    const { houseDetails, price, priceText, ...listingData } =
+      createHouseListingDto as any;
     console.log('🔥 Received body:');
 
     return this.prisma.listing.create({
       data: {
         ...listingData,
+        price: price === undefined || price === null ? undefined : price,
+        priceText: priceText,
         category: ListingCategory.HOUSE,
         houseDetails: {
           create: houseDetails,
@@ -189,12 +192,17 @@ export class HouseListingsService {
       throw new NotFoundException('House listing not found');
     }
 
-    const { houseDetails, ...listingData } = updateHouseListingDto;
+    const { houseDetails, price, priceText, ...listingData } =
+      updateHouseListingDto as any;
 
     return this.prisma.listing.update({
       where: { id },
       data: {
         ...listingData,
+        price:
+          price === undefined || price === null ? existingListing.price : price,
+        priceText:
+          priceText === undefined ? existingListing.priceText : priceText,
         ...(houseDetails && {
           houseDetails: {
             update: houseDetails,

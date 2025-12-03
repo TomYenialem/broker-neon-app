@@ -198,29 +198,47 @@ export class ListingsService {
     }
 
     // Get listings with pagination
-    const [listings, total] = await Promise.all([
-      this.prisma.listing.findMany({
-        where,
-        skip,
-        take: limit,
-        orderBy,
-        include: {
-          user: {
-            select: {
-              id: true,
-              firstName: true,
-              lastName: true,
-              email: true,
+    let listings = [] as any[];
+    let total = 0;
+    try {
+      const result = await Promise.all([
+        this.prisma.listing.findMany({
+          where,
+          skip,
+          take: limit,
+          orderBy,
+          include: {
+            user: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                email: true,
+              },
             },
+            carDetails: true,
+            houseDetails: true,
+            landDetails: true,
+            machineDetails: true,
           },
-          carDetails: true,
-          houseDetails: true,
-          landDetails: true,
-          machineDetails: true,
-        },
-      }),
-      this.prisma.listing.count({ where }),
-    ]);
+        }),
+        this.prisma.listing.count({ where }),
+      ]);
+      listings = result[0];
+      total = result[1] as number;
+    } catch (err: any) {
+      // Gracefully handle DB connectivity issues (e.g., Prisma P1001)
+      const code = err?.code || err?.name;
+      if (code === 'P1001') {
+        // Log minimal info and return empty dataset to avoid 500s on public pages
+        // eslint-disable-next-line no-console
+        console.error('Database unreachable (P1001). Returning empty listings.');
+        listings = [];
+        total = 0;
+      } else {
+        throw err;
+      }
+    }
 
     return {
       data: listings,
@@ -290,29 +308,45 @@ export class ListingsService {
     }
 
     // Get featured listings with pagination
-    const [listings, total] = await Promise.all([
-      this.prisma.listing.findMany({
-        where,
-        skip,
-        take: limit,
-        orderBy,
-        include: {
-          user: {
-            select: {
-              id: true,
-              firstName: true,
-              lastName: true,
-              email: true,
+    let listings = [] as any[];
+    let total = 0;
+    try {
+      const result = await Promise.all([
+        this.prisma.listing.findMany({
+          where,
+          skip,
+          take: limit,
+          orderBy,
+          include: {
+            user: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                email: true,
+              },
             },
+            carDetails: true,
+            houseDetails: true,
+            landDetails: true,
+            machineDetails: true,
           },
-          carDetails: true,
-          houseDetails: true,
-          landDetails: true,
-          machineDetails: true,
-        },
-      }),
-      this.prisma.listing.count({ where }),
-    ]);
+        }),
+        this.prisma.listing.count({ where }),
+      ]);
+      listings = result[0];
+      total = result[1] as number;
+    } catch (err: any) {
+      const code = err?.code || err?.name;
+      if (code === 'P1001') {
+        // eslint-disable-next-line no-console
+        console.error('Database unreachable (P1001). Returning empty featured listings.');
+        listings = [];
+        total = 0;
+      } else {
+        throw err;
+      }
+    }
 
     return {
       data: listings,

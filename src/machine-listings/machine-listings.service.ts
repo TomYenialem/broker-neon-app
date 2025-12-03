@@ -10,11 +10,14 @@ export class MachineListingsService {
   constructor(private prisma: PrismaService) {}
 
   async create(createMachineListingDto: CreateMachineListingDto) {
-    const { machineDetails, ...listingData } = createMachineListingDto;
+    const { machineDetails, price, priceText, ...listingData } =
+      createMachineListingDto as any;
 
     return this.prisma.listing.create({
       data: {
         ...listingData,
+        price: price === undefined || price === null ? undefined : price,
+        priceText: priceText,
         category: ListingCategory.MACHINE,
         machineDetails: {
           create: machineDetails,
@@ -161,12 +164,17 @@ export class MachineListingsService {
       throw new NotFoundException('Machine listing not found');
     }
 
-    const { machineDetails, ...listingData } = updateMachineListingDto;
+    const { machineDetails, price, priceText, ...listingData } =
+      updateMachineListingDto as any;
 
     return this.prisma.listing.update({
       where: { id },
       data: {
         ...listingData,
+        price:
+          price === undefined || price === null ? existingListing.price : price,
+        priceText:
+          priceText === undefined ? existingListing.priceText : priceText,
         ...(machineDetails && {
           machineDetails: {
             update: machineDetails,
