@@ -10,7 +10,7 @@ import {
   Min,
   ValidateNested,
 } from 'class-validator';
-import { Type } from 'class-transformer';
+import { Type, Transform } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   Currency,
@@ -162,9 +162,22 @@ export class CreateMachineListingDto {
     example: 45000,
     type: Number,
   })
+  @IsOptional()
+  @Transform(({ value }) => (value === '' || value === null ? undefined : value))
+  @Type(() => Number)
   @IsNumber()
   @Min(0)
-  price: number;
+  price?: number;
+
+  @ApiPropertyOptional({
+    description: 'Price as text when numeric value is unavailable',
+    example: 'Contact for price',
+    type: String,
+  })
+  @IsOptional()
+  @Transform(({ value }) => (value === '' || value === null ? undefined : String(value).trim()))
+  @IsString()
+  priceText?: string;
 
   @ApiPropertyOptional({
     description: 'Currency',

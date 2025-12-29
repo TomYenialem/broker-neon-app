@@ -10,7 +10,7 @@ import {
   Min,
   ValidateNested,
 } from 'class-validator';
-import { Type } from 'class-transformer';
+import { Type, Transform } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   Currency,
@@ -220,9 +220,22 @@ export class CreateCarListingDto {
     example: 25000000,
     type: Number,
   })
+  @IsOptional()
+  @Transform(({ value }) => (value === '' || value === null ? undefined : value))
+  @Type(() => Number)
   @IsNumber({}, { message: 'Price must be a number' })
   @Min(0, { message: 'Price cannot be negative' })
-  price: number;
+  price?: number;
+
+  @ApiPropertyOptional({
+    description: 'Price as free text (e.g., "Sob consulta" or "Contact for price")',
+    example: 'Sob consulta',
+    type: String,
+  })
+  @IsOptional()
+  @Transform(({ value }) => (value === '' || value === null ? undefined : String(value).trim()))
+  @IsString({ message: 'Price text must be a string' })
+  priceText?: string;
 
   @ApiPropertyOptional({
     description: 'Currency (Kwanzas or USD)',
