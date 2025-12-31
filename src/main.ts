@@ -8,7 +8,7 @@ import { join } from 'path';
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 app.enableCors({
-  origin: ['http://localhost:3000', 'https://plancabrokers.vercel.app,http://localhost:3001'],
+  origin: ['http://localhost:3000', 'https://plancabrokers.vercel.app'],
   credentials: true,
 });
 
