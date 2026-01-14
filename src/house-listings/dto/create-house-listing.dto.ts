@@ -35,7 +35,9 @@ export class HouseDetailsDto {
     type: Number,
   })
   @IsOptional()
-  @Transform(({ value }) => (value === '' || value === null ? undefined : value))
+  @Transform(({ value }) =>
+    value === '' || value === null ? undefined : value,
+  )
   @Type(() => Number)
   @IsNumber()
   @Min(0)
@@ -47,7 +49,9 @@ export class HouseDetailsDto {
     type: Number,
   })
   @IsOptional()
-  @Transform(({ value }) => (value === '' || value === null ? undefined : value))
+  @Transform(({ value }) =>
+    value === '' || value === null ? undefined : value,
+  )
   @Type(() => Number)
   @IsNumber()
   @Min(0)
@@ -59,8 +63,12 @@ export class HouseDetailsDto {
     type: Number,
   })
   @IsOptional()
-  @Transform(({ value }) => (value === '' || value === null ? undefined : value))
-  @Transform(({ value }) => (value === '' || value === null ? undefined : value))
+  @Transform(({ value }) =>
+    value === '' || value === null ? undefined : value,
+  )
+  @Transform(({ value }) =>
+    value === '' || value === null ? undefined : value,
+  )
   @Type(() => Number)
   @IsInt()
   @Min(0)
@@ -72,8 +80,12 @@ export class HouseDetailsDto {
     type: Number,
   })
   @IsOptional()
-  @Transform(({ value }) => (value === '' || value === null ? undefined : value))
-  @Transform(({ value }) => (value === '' || value === null ? undefined : value))
+  @Transform(({ value }) =>
+    value === '' || value === null ? undefined : value,
+  )
+  @Transform(({ value }) =>
+    value === '' || value === null ? undefined : value,
+  )
   @Type(() => Number)
   @IsInt()
   @Min(0)
@@ -172,7 +184,9 @@ export class HouseDetailsDto {
     type: Number,
   })
   @IsOptional()
-  @Transform(({ value }) => (value === '' || value === null ? undefined : value))
+  @Transform(({ value }) =>
+    value === '' || value === null ? undefined : value,
+  )
   @Type(() => Number)
   @IsNumber()
   @Min(0)
@@ -184,7 +198,9 @@ export class HouseDetailsDto {
     type: Number,
   })
   @IsOptional()
-  @Transform(({ value }) => (value === '' || value === null ? undefined : value))
+  @Transform(({ value }) =>
+    value === '' || value === null ? undefined : value,
+  )
   @Type(() => Number)
   @IsNumber()
   @Min(0)
@@ -196,7 +212,9 @@ export class HouseDetailsDto {
     type: Number,
   })
   @IsOptional()
-  @Transform(({ value }) => (value === '' || value === null ? undefined : value))
+  @Transform(({ value }) =>
+    value === '' || value === null ? undefined : value,
+  )
   @Type(() => Number)
   @IsNumber()
   @Min(0)
@@ -208,7 +226,9 @@ export class HouseDetailsDto {
     type: Number,
   })
   @IsOptional()
-  @Transform(({ value }) => (value === '' || value === null ? undefined : value))
+  @Transform(({ value }) =>
+    value === '' || value === null ? undefined : value,
+  )
   @Type(() => Number)
   @IsNumber()
   @Min(0)
@@ -260,7 +280,9 @@ export class CreateHouseListingDto {
     type: Number,
   })
   @IsOptional()
-  @Transform(({ value }) => (value === '' || value === null ? undefined : value))
+  @Transform(({ value }) =>
+    value === '' || value === null ? undefined : value,
+  )
   @Type(() => Number)
   @IsNumber()
   @Min(0)

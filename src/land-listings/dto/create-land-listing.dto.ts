@@ -244,7 +244,9 @@ export class CreateLandListingDto {
     type: Number,
   })
   @IsOptional()
-  @Transform(({ value }) => (value === '' || value === null ? undefined : value))
+  @Transform(({ value }) =>
+    value === '' || value === null ? undefined : value,
+  )
   @Type(() => Number)
   @IsNumber({}, { message: 'Price must be a number' })
   @Min(0, { message: 'Price cannot be negative' })
@@ -256,7 +258,9 @@ export class CreateLandListingDto {
     type: String,
   })
   @IsOptional()
-  @Transform(({ value }) => (value === '' || value === null ? undefined : String(value).trim()))
+  @Transform(({ value }) =>
+    value === '' || value === null ? undefined : String(value).trim(),
+  )
   @IsString({ message: 'Price text must be a string' })
   priceText?: string;
 

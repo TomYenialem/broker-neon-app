@@ -163,7 +163,9 @@ export class CreateMachineListingDto {
     type: Number,
   })
   @IsOptional()
-  @Transform(({ value }) => (value === '' || value === null ? undefined : value))
+  @Transform(({ value }) =>
+    value === '' || value === null ? undefined : value,
+  )
   @Type(() => Number)
   @IsNumber()
   @Min(0)
@@ -175,7 +177,9 @@ export class CreateMachineListingDto {
     type: String,
   })
   @IsOptional()
-  @Transform(({ value }) => (value === '' || value === null ? undefined : String(value).trim()))
+  @Transform(({ value }) =>
+    value === '' || value === null ? undefined : String(value).trim(),
+  )
   @IsString()
   priceText?: string;
 

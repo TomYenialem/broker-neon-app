@@ -100,7 +100,11 @@ export class ListingsService {
 
     // Category-specific filters using nested where clauses
     // Car filters
-    if (filters.carFuelType || filters.carTransmission || filters.carCondition) {
+    if (
+      filters.carFuelType ||
+      filters.carTransmission ||
+      filters.carCondition
+    ) {
       where.carDetails = {};
       if (filters.carFuelType) {
         where.carDetails.fuelType = filters.carFuelType;
@@ -151,7 +155,10 @@ export class ListingsService {
       if (filters.landZoningType) {
         where.landDetails.zoningType = filters.landZoningType;
       }
-      if (filters.landMinArea !== undefined || filters.landMaxArea !== undefined) {
+      if (
+        filters.landMinArea !== undefined ||
+        filters.landMaxArea !== undefined
+      ) {
         where.landDetails.totalArea = {};
         if (filters.landMinArea !== undefined) {
           where.landDetails.totalArea.gte = filters.landMinArea;
@@ -232,7 +239,9 @@ export class ListingsService {
       if (code === 'P1001') {
         // Log minimal info and return empty dataset to avoid 500s on public pages
         // eslint-disable-next-line no-console
-        console.error('Database unreachable (P1001). Returning empty listings.');
+        console.error(
+          'Database unreachable (P1001). Returning empty listings.',
+        );
         listings = [];
         total = 0;
       } else {
@@ -340,7 +349,9 @@ export class ListingsService {
       const code = err?.code || err?.name;
       if (code === 'P1001') {
         // eslint-disable-next-line no-console
-        console.error('Database unreachable (P1001). Returning empty featured listings.');
+        console.error(
+          'Database unreachable (P1001). Returning empty featured listings.',
+        );
         listings = [];
         total = 0;
       } else {
