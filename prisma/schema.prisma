@@ -80,7 +80,8 @@ model Listing {
   neighborhood String?
 
   // Media (use Json arrays for both images and videos)
-  images Json
+ images Json @default("[]")
+
   videos Json @default("[]")
   
   // Featured listing
