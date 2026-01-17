@@ -1,15 +1,80 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { v2 as cloudinary } from 'cloudinary';
+import { v2 as cloudinary, UploadApiResponse } from 'cloudinary';
 import { configureCloudinary } from '../../cloudinary/cloudinary.config';
 import * as path from 'path';
 import { v4 as uuidv4 } from 'uuid';
+import { Readable } from 'stream';
 
 @Injectable()
 export class FileUploadService {
+  private readonly videoChunkSize = 6_000_000; // 6 MB chunks for large videos
+  private readonly imageTimeoutMs = 60_000;
+  private readonly videoTimeoutMs = 180_000;
+  private readonly maxUploadRetries = 1;
+
   constructor(private config: ConfigService) {
     // Initialize Cloudinary
     configureCloudinary(this.config);
+  }
+
+  private isTimeoutError(error: any): boolean {
+    if (!error) return false;
+    return (
+      error.http_code === 499 ||
+      error.name === 'TimeoutError' ||
+      error?.error?.name === 'TimeoutError' ||
+      error.message?.toLowerCase().includes('timeout')
+    );
+  }
+
+  private async uploadBuffer(
+    file: Express.Multer.File,
+    publicId: string,
+    resourceType: 'image' | 'video',
+  ): Promise<UploadApiResponse> {
+    const timeout =
+      resourceType === 'video' ? this.videoTimeoutMs : this.imageTimeoutMs;
+    const chunkSize = resourceType === 'video' ? this.videoChunkSize : undefined;
+
+    const attemptUpload = () =>
+      new Promise<UploadApiResponse>((resolve, reject) => {
+        const uploadStream = cloudinary.uploader.upload_stream.call(
+          cloudinary.uploader,
+          {
+            public_id: publicId,
+            resource_type: resourceType,
+            overwrite: false,
+            timeout,
+            chunk_size: chunkSize,
+          },
+          (error, result) => {
+            if (error) {
+              return reject(error);
+            }
+            if (!result) {
+              return reject(new Error('Cloudinary upload returned no result.'));
+            }
+            resolve(result);
+          },
+        );
+
+        Readable.from(file.buffer).pipe(uploadStream);
+      });
+
+    let attempt = 0;
+    while (true) {
+      try {
+        return await attemptUpload();
+      } catch (error) {
+        if (this.isTimeoutError(error) && attempt < this.maxUploadRetries) {
+          attempt += 1;
+          await new Promise((res) => setTimeout(res, 1000));
+          continue;
+        }
+        throw error;
+      }
+    }
   }
 
   /**
@@ -65,14 +130,11 @@ export class FileUploadService {
           ? 'video'
           : 'image';
 
-        // Convert buffer to data URI for Cloudinary upload
-        const dataUri = `data:${file.mimetype};base64,${file.buffer.toString('base64')}`;
-
-        const uploadResult = await cloudinary.uploader.upload(dataUri, {
-          public_id: publicId, // Full path including folder
-          resource_type: resourceType,
-          overwrite: false,
-        });
+        const uploadResult = await this.uploadBuffer(
+          file,
+          publicId,
+          resourceType,
+        );
 
         fileUrls.push(uploadResult.secure_url);
       } catch (error) {

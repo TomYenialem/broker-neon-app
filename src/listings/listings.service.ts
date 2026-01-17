@@ -50,6 +50,34 @@ interface GetFeaturedListingsDto {
 
 @Injectable()
 export class ListingsService {
+  private readonly baseListingSelect = {
+    id: true,
+    title: true,
+    description: true,
+    price: true,
+    priceText: true,
+    currency: true,
+    status: true,
+    province: true,
+    municipality: true,
+    neighborhood: true,
+    images: true,
+    videos: true,
+    isFeatured: true,
+    category: true,
+    userId: true,
+    createdAt: true,
+    updatedAt: true,
+    user: {
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+      },
+    },
+  } as const;
+
   constructor(private prisma: PrismaService) {}
 
   async getAllListings(filters: GetAllListingsDto) {
@@ -204,60 +232,94 @@ export class ListingsService {
       }
     }
 
-    // Get listings with pagination
-    let listings = [] as any[];
-    let total = 0;
     try {
-      const result = await Promise.all([
+      const [baseListings, total] = await Promise.all([
         this.prisma.listing.findMany({
           where,
           skip,
           take: limit,
           orderBy,
-          include: {
-            user: {
-              select: {
-                id: true,
-                firstName: true,
-                lastName: true,
-                email: true,
-              },
-            },
-            carDetails: true,
-            houseDetails: true,
-            landDetails: true,
-            machineDetails: true,
-          },
+          select: this.baseListingSelect,
         }),
         this.prisma.listing.count({ where }),
       ]);
-      listings = result[0];
-      total = result[1] as number;
+
+      const listings = await this.hydrateListingDetails(baseListings);
+
+      return {
+        data: listings,
+        meta: {
+          total,
+          page,
+          limit,
+          totalPages: Math.ceil(total / limit),
+        },
+      };
     } catch (err: any) {
-      // Gracefully handle DB connectivity issues (e.g., Prisma P1001)
-      const code = err?.code || err?.name;
-      if (code === 'P1001') {
-        // Log minimal info and return empty dataset to avoid 500s on public pages
+      const code = err?.code || err?.name || err?.error?.name;
+      const isTimeout = code === 'TimeoutError';
+      if (code === 'P1001' || isTimeout) {
         // eslint-disable-next-line no-console
         console.error(
-          'Database unreachable (P1001). Returning empty listings.',
+          'Database unreachable or timed out. Returning empty listings.',
         );
-        listings = [];
-        total = 0;
-      } else {
-        throw err;
+        return {
+          data: [],
+          meta: {
+            total: 0,
+            page,
+            limit,
+            totalPages: 0,
+          },
+        };
       }
+      throw err;
+    }
+  }
+
+  private async hydrateListingDetails(listings: any[]) {
+    if (!listings.length) {
+      return listings;
     }
 
-    return {
-      data: listings,
-      meta: {
-        total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit),
-      },
-    };
+    const listingIds = listings.map((listing: any) => listing.id);
+
+    const [carDetails, houseDetails, landDetails, machineDetails] =
+      await Promise.all([
+        this.prisma.carDetails.findMany({
+          where: { listingId: { in: listingIds } },
+        }),
+        this.prisma.houseDetails.findMany({
+          where: { listingId: { in: listingIds } },
+        }),
+        this.prisma.landDetails.findMany({
+          where: { listingId: { in: listingIds } },
+        }),
+        this.prisma.machineDetails.findMany({
+          where: { listingId: { in: listingIds } },
+        }),
+      ]);
+
+    const carMap = new Map(
+      carDetails.map((detail: any) => [detail.listingId, detail]),
+    );
+    const houseMap = new Map(
+      houseDetails.map((detail: any) => [detail.listingId, detail]),
+    );
+    const landMap = new Map(
+      landDetails.map((detail: any) => [detail.listingId, detail]),
+    );
+    const machineMap = new Map(
+      machineDetails.map((detail: any) => [detail.listingId, detail]),
+    );
+
+    return listings.map((listing: any) => ({
+      ...listing,
+      carDetails: carMap.get(listing.id) ?? null,
+      houseDetails: houseMap.get(listing.id) ?? null,
+      landDetails: landMap.get(listing.id) ?? null,
+      machineDetails: machineMap.get(listing.id) ?? null,
+    }));
   }
 
   async getListingById(id: string) {
@@ -316,58 +378,49 @@ export class ListingsService {
       }
     }
 
-    // Get featured listings with pagination
-    let listings = [] as any[];
-    let total = 0;
     try {
-      const result = await Promise.all([
+      const [baseListings, total] = await Promise.all([
         this.prisma.listing.findMany({
           where,
           skip,
           take: limit,
           orderBy,
-          include: {
-            user: {
-              select: {
-                id: true,
-                firstName: true,
-                lastName: true,
-                email: true,
-              },
-            },
-            carDetails: true,
-            houseDetails: true,
-            landDetails: true,
-            machineDetails: true,
-          },
+          select: this.baseListingSelect,
         }),
         this.prisma.listing.count({ where }),
       ]);
-      listings = result[0];
-      total = result[1] as number;
+
+      const listings = await this.hydrateListingDetails(baseListings);
+
+      return {
+        data: listings,
+        meta: {
+          total,
+          page,
+          limit,
+          totalPages: Math.ceil(total / limit),
+        },
+      };
     } catch (err: any) {
-      const code = err?.code || err?.name;
-      if (code === 'P1001') {
+      const code = err?.code || err?.name || err?.error?.name;
+      const isTimeout = code === 'TimeoutError';
+      if (code === 'P1001' || isTimeout) {
         // eslint-disable-next-line no-console
         console.error(
-          'Database unreachable (P1001). Returning empty featured listings.',
+          'Database unreachable or timed out. Returning empty featured listings.',
         );
-        listings = [];
-        total = 0;
-      } else {
-        throw err;
+        return {
+          data: [],
+          meta: {
+            total: 0,
+            page,
+            limit,
+            totalPages: 0,
+          },
+        };
       }
+      throw err;
     }
-
-    return {
-      data: listings,
-      meta: {
-        total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit),
-      },
-    };
   }
 
   async getDashboardStatistics() {
