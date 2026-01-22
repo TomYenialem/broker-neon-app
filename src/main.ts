@@ -7,15 +7,14 @@ import { join } from 'path';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
-app.enableCors({
-  origin: [
-    'http://localhost:3000',
-    'https://plancabrokers.com',
-    'https://brokers.vercel.app',
-  ],
-  credentials: true,
-});
-
+  app.enableCors({
+    origin: [
+      'http://localhost:3000',
+      'https://plancabrokers.com',
+      'https://brokers.vercel.app',
+    ],
+    credentials: true,
+  });
 
   // Enable validation pipes globally
   app.useGlobalPipes(
@@ -54,7 +53,10 @@ app.enableCors({
       )
       .addTag('Car Listings', 'Create, read, update, and delete car listings')
       .addTag('Land Listings', 'Create, read, update, and delete land listings')
-      .addTag('House Listings', 'Create, read, update, and delete house listings')
+      .addTag(
+        'House Listings',
+        'Create, read, update, and delete house listings',
+      )
       .addTag(
         'Machine Listings',
         'Create, read, update, and delete machine/equipment listings',
