@@ -10,7 +10,8 @@ async function bootstrap() {
 app.enableCors({
   origin: [
     'http://localhost:3000',
-    'https://plancabrokers.vercel.app,https://plancabrokers.com/',
+    'https://plancabrokers.com',
+    'https://brokers.vercel.app',
   ],
   credentials: true,
 });
