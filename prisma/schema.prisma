@@ -3,49 +3,41 @@ generator client {
 }
 
 datasource db {
-  provider          = "postgresql"
-  url               = env("DATABASE_URL")
-  // shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
-/* ===================== USERS & AUTH ===================== */
-
 model User {
-  id            String   @id @default(uuid())
-  email         String   @unique
-  emailVerified Boolean  @default(false)
-  firstName     String
-  lastName      String
+  id            String    @id @default(uuid())
+  email         String    @unique
+  emailVerified Boolean   @default(false)
   password      String
   phone         String?
   image         String?
-  role          UserRole @default(USER)
-
-  // All listings created by this user
-  listings  Listing[]
-  accounts  Account[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  role          UserRole  @default(USER)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  firstName     String
+  lastName      String
+  accounts      Account[]
+  listings      Listing[]
 
   @@index([email])
 }
 
 model Account {
-  id                String  @id @default(uuid())
-  userId            String
-  accountId         String
-  providerId        String
-  accessToken       String?
-  refreshToken      String?
-  idToken           String?
-  expiresAt         DateTime?
-  password          String?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id           String    @id @default(uuid())
+  userId       String
+  accountId    String
+  providerId   String
+  accessToken  String?
+  refreshToken String?
+  idToken      String?
+  expiresAt    DateTime?
+  password     String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([providerId, accountId])
   @@index([userId])
@@ -56,206 +48,142 @@ model Verification {
   identifier String
   value      String
   expiresAt  DateTime
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   @@unique([identifier, value])
 }
 
-/* ===================== UNIFIED LISTING ===================== */
-
 model Listing {
-  id          String   @id @default(uuid())
-  title       String
-  description String? 
-  price       Float?
-  priceText   String?
-  currency    Currency @default(AOA)
-  status      ListingStatus @default(ACTIVE)
-
-  // Location (shared)
-  province     String?
-  municipality String?
-  neighborhood String?
-
-  // Media (use Json arrays for both images and videos)
- images Json @default("[]")
-
-  videos Json @default("[]")
-  
-  // Featured listing
-  isFeatured Boolean @default(false)
-
-  // Category selector: LAND | CAR | HOUSE | MACHINE
-  category ListingCategory
-
-  // Owner  optional
-  userId String?
-  user   User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  // 1:1 optional relations to category-specific detail tables
-  landDetails    LandDetails?
+  id             String          @id @default(uuid())
+  title          String
+  description    String?
+  price          Float?
+  currency       Currency        @default(AOA)
+  status         ListingStatus   @default(ACTIVE)
+  province       String?
+  municipality   String?
+  neighborhood   String?
+  images         Json
+  category       ListingCategory
+  userId         String?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  videos         Json            @default("[]")
+  isFeatured     Boolean         @default(false)
+  priceText      String?
   carDetails     CarDetails?
   houseDetails   HouseDetails?
+  landDetails    LandDetails?
+  user           User?           @relation(fields: [userId], references: [id], onDelete: Cascade)
   machineDetails MachineDetails?
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // ---------- Indexes ----------
-
-  // Feed & status filters by category, newest first
-  @@index([category, status, createdAt(sort: Desc)], name: "idx_listing_cat_status_createdAt")
-
-  // Price sorting/filtering within a category
-  @@index([category, price], name: "idx_listing_cat_price")
-  @@index([category, priceText], name: "idx_listing_cat_priceText")
-
-  // Common search by location granularity
-  @@index([province, municipality, neighborhood], name: "idx_listing_location")
-
-  // User profile: "my listings"
-  @@index([userId, createdAt(sort: Desc)], name: "idx_listing_user_createdAt")
-
-  // General status views
-  @@index([status, createdAt(sort: Desc)], name: "idx_listing_status_createdAt")
-
-  // Global price filters
-  @@index([price], name: "idx_listing_price")
-  @@index([priceText], name: "idx_listing_priceText")
-
-  // PostgreSQL full-text search indexes on title & description
-  @@index([title], name: "idx_listing_title")
-  @@index([description], name: "idx_listing_description")
-  
+  @@index([category, status, createdAt(sort: Desc)], map: "idx_listing_cat_status_createdAt")
+  @@index([category, price], map: "idx_listing_cat_price")
+  @@index([category, priceText], map: "idx_listing_cat_priceText")
+  @@index([province, municipality, neighborhood], map: "idx_listing_location")
+  @@index([userId, createdAt(sort: Desc)], map: "idx_listing_user_createdAt")
+  @@index([status, createdAt(sort: Desc)], map: "idx_listing_status_createdAt")
+  @@index([price], map: "idx_listing_price")
+  @@index([priceText], map: "idx_listing_priceText")
+  @@index([title], map: "idx_listing_title")
+  @@index([description], map: "idx_listing_description")
 }
 
-/* ===================== CATEGORY-SPECIFIC TABLES ===================== */
-
-/* ---- LAND ---- */
+/// ---- LAND ----
 model LandDetails {
-  listingId String  @id
-  listing   Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
-
-  // Core
-  totalArea  Float?
-  areaUnit   AreaUnit?    @default(SQUARE_METERS)
-  topography Topography?
-  distanceFromMainRoad Float?
-  isDemarcated Boolean?
-  documentType DocumentType?
-
-  // Subcategory selector
-  landPurpose LandPurpose
-
-  // ---- Agricultural ----
-  waterSource          String?
-  hasIrrigationSystem  Boolean?
-  soilType             SoilType?
-  soilTested           Boolean?
-  previousUse          String?
-  agriculturalSupport  String?
-  climateInfo          String?
-
-  // ---- Residential/Commercial ----
-  zoningType        ZoningType?
-  electricityAccess UtilityAccess?
-  waterAccess       UtilityAccess?
-  sanitationAccess  UtilityAccess?
-  securityInfo      String?
-  
-  // Additional custom fields
+  listingId             String         @id
+  totalArea             Float
+  areaUnit              AreaUnit       @default(SQUARE_METERS)
+  topography            Topography?
+  distanceFromMainRoad  Float?
+  isDemarcated          Boolean?
+  documentType          DocumentType?
+  landPurpose           LandPurpose
+  waterSource           String?
+  hasIrrigationSystem   Boolean?
+  soilType              SoilType?
+  soilTested            Boolean?
+  previousUse           String?
+  agriculturalSupport   String?
+  climateInfo           String?
+  zoningType            ZoningType?
+  electricityAccess     UtilityAccess?
+  waterAccess           UtilityAccess?
+  sanitationAccess      UtilityAccess?
+  securityInfo          String?
   additionalInformation String?
   customFeatures        Json?
+  listing               Listing        @relation(fields: [listingId], references: [id], onDelete: Cascade)
 }
 
-/* ---- CAR ---- */
+/// ---- CAR ----
 model CarDetails {
-  listingId String  @id
-  listing   Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
-
-  make             String?
-  model            String?
-  trimLevel        String?
-  manufactureYear  Int?
-  registrationYear Int?
-  mileage          Float?
-  fuelType         FuelType
-  transmission     Transmission
-  condition        VehicleCondition
-  color            String?
-  interiorType     InteriorType?
-  vehicleOrigin    VehicleOrigin?
-  customsStatus    CustomsStatus
-  serviceHistory   Boolean?
-  reasonForSelling String?
-
-  features Json?
-  
-  // Additional custom fields
+  listingId             String           @id
+  make                  String
+  model                 String
+  trimLevel             String?
+  manufactureYear       Int?
+  registrationYear      Int?
+  mileage               Float?
+  fuelType              FuelType
+  transmission          Transmission
+  condition             VehicleCondition
+  color                 String?
+  interiorType          InteriorType?
+  vehicleOrigin         VehicleOrigin?
+  customsStatus         CustomsStatus
+  serviceHistory        Boolean?
+  reasonForSelling      String?
+  features              Json?
   additionalInformation String?
   customFeatures        Json?
+  listing               Listing          @relation(fields: [listingId], references: [id], onDelete: Cascade)
 }
 
-/* ---- HOUSE ---- */
+/// ---- HOUSE ----
 model HouseDetails {
-  listingId String  @id
-  listing   Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
-
-  houseType            HouseType
-  plotSize             Float?
-  livingArea           Float?
-  bedrooms             Int?
-  bathrooms            Int?
-  constructionQuality  ConstructionQuality
-
-  // Utilities
-  waterSource  WaterSource?
-  hasWaterTank Boolean?
-  hasGenerator Boolean?
-  hasInverter  Boolean?
-
-  // Features
-  securityFeatures Json
-  interiorFeatures Json
-  exteriorFeatures Json
-
-  // Distances
+  listingId              String              @id
+  houseType              HouseType
+  plotSize               Float?
+  livingArea             Float?
+  bedrooms               Int?
+  bathrooms              Int?
+  constructionQuality    ConstructionQuality
+  waterSource            WaterSource?
+  hasWaterTank           Boolean?
+  hasGenerator           Boolean?
+  hasInverter            Boolean?
+  securityFeatures       Json
+  interiorFeatures       Json
+  exteriorFeatures       Json
   distanceToCityCenter   Float?
   distanceToSchools      Float?
   distanceToHospitals    Float?
   distanceToSupermarkets Float?
-  
-  // Additional custom fields
-  additionalInformation String?
-  customFeatures        Json?
+  additionalInformation  String?
+  customFeatures         Json?
+  listing                Listing             @relation(fields: [listingId], references: [id], onDelete: Cascade)
 }
 
-/* ---- MACHINE ---- */
+/// ---- MACHINE ----
 model MachineDetails {
-  listingId String  @id
-  listing   Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
-
-  machineType           String
-  modelNumber           String?
-  condition             MachineCondition
-  manufactureYear       Int?
-  hoursOfUse            Float?
-  workingCapacity       String?
-  specifications        String?
-  serviceHistory        Boolean?
-  reasonForSale         String?
+  listingId              String                  @id
+  machineType            String
+  modelNumber            String?
+  condition              MachineCondition
+  manufactureYear        Int?
+  hoursOfUse             Float?
+  workingCapacity        String?
+  specifications         String?
+  serviceHistory         Boolean?
+  reasonForSale          String?
   sparePartsAvailability SparePartsAvailability?
-  currentLocation       String?
-  
-  // Additional custom fields
-  additionalInformation String?
-  customFeatures        Json?
-  
+  currentLocation        String?
+  additionalInformation  String?
+  customFeatures         Json?
+  listing                Listing                 @relation(fields: [listingId], references: [id], onDelete: Cascade)
 }
-
-/* ===================== ENUMS ===================== */
 
 enum ListingCategory {
   LAND
