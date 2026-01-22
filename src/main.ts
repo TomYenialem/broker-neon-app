@@ -38,58 +38,64 @@ app.enableCors({
   //   prefix: '/uploads/',
   // });
 
-  // Swagger Configuration
-  const config = new DocumentBuilder()
-    .setTitle('Broker Platform API')
-    .setDescription(
-      'Complete API documentation for the Angolan Broker Platform - supporting Land, Cars, Houses, and Machines listings with JWT authentication',
-    )
-    .setVersion('1.0')
-    .addTag(
-      'Authentication',
-      'User registration, login, and JWT token management',
-    )
-    .addTag('Car Listings', 'Create, read, update, and delete car listings')
-    .addTag('Land Listings', 'Create, read, update, and delete land listings')
-    .addTag('House Listings', 'Create, read, update, and delete house listings')
-    .addTag(
-      'Machine Listings',
-      'Create, read, update, and delete machine/equipment listings',
-    )
-    .addBearerAuth(
-      {
-        type: 'http',
-        scheme: 'bearer',
-        bearerFormat: 'JWT',
-        name: 'JWT',
-        description: 'Enter JWT access token',
-        in: 'header',
-      },
-      'JWT-auth',
-    )
-    .addServer('http://localhost:5000', 'Development Server')
-    .addServer('https://broker-app-aa17.onrender.com', 'Production Server')
-    .build();
+  const isProd = process.env.NODE_ENV === 'production';
 
-  const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api/docs', app, document, {
-    swaggerOptions: {
-      persistAuthorization: true,
-      tagsSorter: 'alpha',
-      operationsSorter: 'alpha',
-    },
-    customSiteTitle: 'Broker API Docs',
-    customfavIcon: 'https://nestjs.com/img/logo-small.svg',
-    customCss: `
-      .swagger-ui .topbar { display: none }
-      .swagger-ui .info { margin: 20px 0; }
-      .swagger-ui .info .title { font-size: 36px; }
-    `,
-  });
+  if (!isProd) {
+    // Swagger Configuration (development/test only)
+    const config = new DocumentBuilder()
+      .setTitle('Broker Platform API')
+      .setDescription(
+        'Complete API documentation for the Angolan Broker Platform - supporting Land, Cars, Houses, and Machines listings with JWT authentication',
+      )
+      .setVersion('1.0')
+      .addTag(
+        'Authentication',
+        'User registration, login, and JWT token management',
+      )
+      .addTag('Car Listings', 'Create, read, update, and delete car listings')
+      .addTag('Land Listings', 'Create, read, update, and delete land listings')
+      .addTag('House Listings', 'Create, read, update, and delete house listings')
+      .addTag(
+        'Machine Listings',
+        'Create, read, update, and delete machine/equipment listings',
+      )
+      .addBearerAuth(
+        {
+          type: 'http',
+          scheme: 'bearer',
+          bearerFormat: 'JWT',
+          name: 'JWT',
+          description: 'Enter JWT access token',
+          in: 'header',
+        },
+        'JWT-auth',
+      )
+      .addServer('http://localhost:5000', 'Development Server')
+      .addServer('https://broker-app-aa17.onrender.com', 'Production Server')
+      .build();
+
+    const document = SwaggerModule.createDocument(app, config);
+    SwaggerModule.setup('api/docs', app, document, {
+      swaggerOptions: {
+        persistAuthorization: true,
+        tagsSorter: 'alpha',
+        operationsSorter: 'alpha',
+      },
+      customSiteTitle: 'Broker API Docs',
+      customfavIcon: 'https://nestjs.com/img/logo-small.svg',
+      customCss: `
+        .swagger-ui .topbar { display: none }
+        .swagger-ui .info { margin: 20px 0; }
+        .swagger-ui .info .title { font-size: 36px; }
+      `,
+    });
+  }
 
   const port = process.env.PORT || 3001;
   await app.listen(port);
   console.log(`🚀 Application is running on: http://localhost:${port}/api`);
-  console.log(`📚 Swagger Documentation: http://localhost:${port}/api/docs`);
+  if (!isProd) {
+    console.log(`📚 Swagger Documentation: http://localhost:${port}/api/docs`);
+  }
 }
 bootstrap();
