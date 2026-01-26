@@ -7,7 +7,9 @@ import {
   DefaultValuePipe,
   Param,
   NotFoundException,
+  UseInterceptors,
 } from '@nestjs/common';
+import { CacheInterceptor, CacheTTL } from '@nestjs/cache-manager';
 import {
   ApiTags,
   ApiOperation,
@@ -102,6 +104,8 @@ export class ListingsController {
   }
 
   @Get('featured')
+  @UseInterceptors(CacheInterceptor)
+  @CacheTTL(30)
   @ApiOperation({
     summary: 'Get featured listings only (Public)',
     description:
@@ -163,6 +167,8 @@ export class ListingsController {
   }
 
   @Get('public')
+  @UseInterceptors(CacheInterceptor)
+  @CacheTTL(30)
   @ApiOperation({
     summary: 'Get all active listings (Public)',
     description:
@@ -410,6 +416,8 @@ export class ListingsController {
   }
 
   @Get(':id')
+  @UseInterceptors(CacheInterceptor)
+  @CacheTTL(30)
   @ApiOperation({
     summary: 'Get listing by ID (Public)',
     description:
