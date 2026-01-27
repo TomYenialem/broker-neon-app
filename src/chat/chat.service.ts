@@ -6,12 +6,18 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { OpenAI } from 'openai';
-import { ListingStatus, Prisma } from '@prisma/client';
+import {
+  Listing,
+  ListingCategory,
+  ListingStatus,
+  Prisma,
+} from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateChatMessageDto } from './dto/create-chat-message.dto';
 import {
   buildChatMessages,
   ConversationHistoryMessage,
+  ListingStatsSummary,
 } from './prompt/chat-prompt.util';
 
 @Injectable()
@@ -23,12 +29,15 @@ export class ChatService {
     private readonly prisma: PrismaService,
     configService: ConfigService,
   ) {
+    // ✅ OpenRouter Integration
     this.openAI = new OpenAI({
-      apiKey: configService.getOrThrow<string>('OPENAI_API_KEY'),
+      apiKey: configService.getOrThrow<string>('OPENROUTER_API_KEY'),
+      baseURL: 'https://openrouter.ai/api/v1', // OpenRouter base URL
     });
   }
 
   async sendChatMessage(userId: string, dto: CreateChatMessageDto) {
+    // Check or create conversation
     const conversation = dto.conversationId
       ? await this.prisma.conversation.findFirst({
           where: { id: dto.conversationId, userId },
@@ -45,6 +54,7 @@ export class ChatService {
         data: { userId },
       }));
 
+    // Fetch last 15 messages for context
     const historyRecords = await this.prisma.message.findMany({
       where: { conversationId: activeConversation.id },
       orderBy: { createdAt: 'desc' },
@@ -59,10 +69,18 @@ export class ChatService {
       }))
       .reverse();
 
-    const listings = await this.fetchListings(dto.filters);
+    // Fetch filtered listings
+    const { listings, stats } = await this.fetchListings(dto.filters);
 
-    const messages = buildChatMessages(listings, history, dto.userMessage);
+    // Build chat messages
+    const messages = buildChatMessages(
+      listings,
+      history,
+      dto.userMessage,
+      stats,
+    );
 
+    // Generate AI response with timeout
     let assistantMessage: string | undefined;
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 15000);
@@ -70,7 +88,7 @@ export class ChatService {
     try {
       const response = await this.openAI.chat.completions.create(
         {
-          model: 'gpt-4o-mini',
+          model: 'openai/gpt-4o-mini', // OpenRouter compatible GPT-4o-mini
           messages,
           temperature: 0.2,
           max_tokens: 600,
@@ -81,14 +99,14 @@ export class ChatService {
       assistantMessage = response.choices[0]?.message?.content?.trim();
     } catch (error) {
       if (error instanceof Error && error.name === 'AbortError') {
-        this.logger.error('OpenAI completion timed out');
+        this.logger.error('OpenRouter completion timed out');
         throw new InternalServerErrorException(
           'AI response timed out, please try again.',
         );
       }
 
       this.logger.error(
-        'OpenAI completion failed',
+        'OpenRouter completion failed',
         error instanceof Error ? error.stack : String(error),
       );
       throw new InternalServerErrorException(
@@ -99,10 +117,11 @@ export class ChatService {
     }
 
     if (!assistantMessage) {
-      this.logger.error('OpenAI returned empty message');
+      this.logger.error('OpenRouter returned empty message');
       throw new InternalServerErrorException('Failed to generate response');
     }
 
+    // Save both user and assistant messages
     await this.prisma.$transaction([
       this.prisma.message.create({
         data: {
@@ -124,11 +143,52 @@ export class ChatService {
       conversationId: activeConversation.id,
       message: assistantMessage,
       listings,
+      stats,
     };
   }
 
-  private async fetchListings(filters?: CreateChatMessageDto['filters']) {
-    const where: Prisma.ListingWhereInput = {};
+  // Fetch filtered listings
+  private async fetchListings(
+    filters?: CreateChatMessageDto['filters'],
+  ): Promise<{
+    listings: Listing[];
+    stats: ListingStatsSummary;
+  }> {
+    const categories: ListingCategory[] = [
+      ListingCategory.CAR,
+      ListingCategory.HOUSE,
+      ListingCategory.LAND,
+      ListingCategory.MACHINE,
+    ];
+
+    const activeCounts = await this.prisma.listing.groupBy({
+      by: ['category'],
+      where: { status: ListingStatus.ACTIVE },
+      _count: {
+        _all: true,
+      },
+    });
+
+    const stats: ListingStatsSummary = {
+      totalActive: activeCounts.reduce(
+        (sum, record) => sum + record._count._all,
+        0,
+      ),
+      byCategory: categories.reduce(
+        (acc, category) => {
+          const match = activeCounts.find(
+            (record) => record.category === category,
+          );
+          acc[category] = match?._count._all ?? 0;
+          return acc;
+        },
+        {} as Record<ListingCategory, number>,
+      ),
+    };
+
+    const where: Prisma.ListingWhereInput = {
+      status: ListingStatus.ACTIVE,
+    };
 
     if (filters?.category) {
       where.category = filters.category;
@@ -136,8 +196,6 @@ export class ChatService {
 
     if (filters?.status) {
       where.status = filters.status;
-    } else {
-      where.status = ListingStatus.ACTIVE;
     }
 
     if (filters?.province) {
@@ -146,12 +204,8 @@ export class ChatService {
 
     if (filters?.minPrice !== undefined || filters?.maxPrice !== undefined) {
       const priceFilter: Prisma.FloatNullableFilter = {};
-      if (filters.minPrice !== undefined) {
-        priceFilter.gte = filters.minPrice;
-      }
-      if (filters.maxPrice !== undefined) {
-        priceFilter.lte = filters.maxPrice;
-      }
+      if (filters.minPrice !== undefined) priceFilter.gte = filters.minPrice;
+      if (filters.maxPrice !== undefined) priceFilter.lte = filters.maxPrice;
       where.price = priceFilter;
     }
 
@@ -165,12 +219,33 @@ export class ChatService {
       ];
     }
 
-    const take = filters?.limit ?? 5;
+    const orderBy: Prisma.ListingOrderByWithRelationInput[] = [
+      { isFeatured: 'desc' },
+      { updatedAt: 'desc' },
+    ];
 
-    return this.prisma.listing.findMany({
+    if (!filters) {
+      const grouped = await Promise.all(
+        categories.map((category) =>
+          this.prisma.listing.findMany({
+            where: { ...where, category },
+            take: 5,
+            orderBy,
+          }),
+        ),
+      );
+
+      return { listings: grouped.flat(), stats };
+    }
+
+    const take = filters?.limit ?? 12;
+
+    const listings = await this.prisma.listing.findMany({
       where,
       take,
-      orderBy: [{ isFeatured: 'desc' }, { updatedAt: 'desc' }],
+      orderBy,
     });
+
+    return { listings, stats };
   }
 }

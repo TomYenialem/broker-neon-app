@@ -233,7 +233,8 @@ export class ListingsController {
     name: 'houseFurnished',
     required: false,
     type: String,
-    description: 'Filter by furnished status (Furnished, Unfurnished, Partially Furnished)',
+    description:
+      'Filter by furnished status (Furnished, Unfurnished, Partially Furnished)',
   })
   // Land-specific filters
   @ApiQuery({
@@ -370,7 +371,7 @@ export class ListingsController {
       machineCondition: machineCondition as any,
     });
   }
- 
+
   @Get('all')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
