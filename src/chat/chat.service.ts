@@ -31,7 +31,7 @@ export class ChatService {
   ) {
     // ✅ OpenRouter Integration
     this.openAI = new OpenAI({
-      apiKey: configService.getOrThrow<string>('OPENROUTER_API_KEY'),
+      apiKey: configService.getOrThrow<string>('OPENROUTER_API_KEY'), 
       baseURL: 'https://openrouter.ai/api/v1', // OpenRouter base URL
     });
   }
@@ -69,8 +69,14 @@ export class ChatService {
       }))
       .reverse();
 
+    // Merge inferred filters from natural language prompt
+    const normalizedFilters = this.mergeFiltersFromMessage(
+      dto.userMessage,
+      dto.filters,
+    );
+
     // Fetch filtered listings
-    const { listings, stats } = await this.fetchListings(dto.filters);
+    const { listings, stats } = await this.fetchListings(normalizedFilters);
 
     // Build chat messages
     const messages = buildChatMessages(
@@ -119,7 +125,7 @@ export class ChatService {
     if (!assistantMessage) {
       this.logger.error('OpenRouter returned empty message');
       throw new InternalServerErrorException('Failed to generate response');
-    }
+    } 
 
     // Save both user and assistant messages
     await this.prisma.$transaction([
@@ -145,6 +151,55 @@ export class ChatService {
       listings,
       stats,
     };
+  }
+
+  private mergeFiltersFromMessage(
+    userMessage: string,
+    filters?: CreateChatMessageDto['filters'],
+  ): CreateChatMessageDto['filters'] | undefined {
+    const inferredCategory = this.inferCategoryFromMessage(userMessage);
+
+    if (!filters) {
+      return inferredCategory ? { category: inferredCategory } : undefined;
+    }
+
+    if (!filters.category && inferredCategory) {
+      return { ...filters, category: inferredCategory };
+    }
+
+    return filters;
+  }
+
+  private inferCategoryFromMessage(
+    userMessage: string,
+  ): ListingCategory | undefined {
+    const text = userMessage.toLowerCase();
+
+    if (/(car|cars|vehicle|vehicles|auto|automobile|suv|truck)/.test(text)) {
+      return ListingCategory.CAR;
+    }
+
+    if (
+      /(house|home|homes|villa|apartment|condo|residence|property|properties)/.test(
+        text,
+      )
+    ) {
+      return ListingCategory.HOUSE;
+    }
+
+    if (/(land|plot|plots|farm|acre|acres|lot|terrain|site)/.test(text)) {
+      return ListingCategory.LAND;
+    }
+
+    if (
+      /(machine|machines|equipment|tractor|bulldozer|excavator|loader|plant)/.test(
+        text,
+      )
+    ) {
+      return ListingCategory.MACHINE;
+    }
+
+    return undefined;
   }
 
   // Fetch filtered listings
