@@ -31,7 +31,7 @@ export class ChatService {
   ) {
     // ✅ OpenRouter Integration
     this.openAI = new OpenAI({
-      apiKey: configService.getOrThrow<string>('OPENROUTER_API_KEY'), 
+      apiKey: configService.getOrThrow<string>('OPENROUTER_API_KEY'),
       baseURL: 'https://openrouter.ai/api/v1', // OpenRouter base URL
     });
   }
@@ -125,7 +125,7 @@ export class ChatService {
     if (!assistantMessage) {
       this.logger.error('OpenRouter returned empty message');
       throw new InternalServerErrorException('Failed to generate response');
-    } 
+    }
 
     // Save both user and assistant messages
     await this.prisma.$transaction([
