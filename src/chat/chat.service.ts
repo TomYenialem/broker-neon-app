@@ -107,19 +107,9 @@ export class ChatService {
       );
 
       assistantMessage = response.choices[0]?.message?.content?.trim();
-    } catch (error) {
-      this.logger.error(
-        'OpenRouter completion failed',
-        error instanceof Error ? error.stack : String(error),
-      );
-      if (error instanceof Error && error.name === 'AbortError') {
-        throw new InternalServerErrorException(
-          'AI response timed out, please try again.',
-        );
-      }
-      throw new InternalServerErrorException(
-        'Unable to generate response currently',
-      );
+    } catch (err) {
+      console.error('OpenRouter connection error:', err);
+      throw err;
     } finally {
       clearTimeout(timeoutId);
     }
