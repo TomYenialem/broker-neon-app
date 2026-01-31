@@ -104,6 +104,7 @@ export class ChatService {
 
       assistantMessage = response.choices[0]?.message?.content?.trim();
     } catch (error) {
+      console.log('Error during OpenRouter completion:', error);
       if (error instanceof Error && error.name === 'AbortError') {
         this.logger.error('OpenRouter completion timed out');
         throw new InternalServerErrorException(
