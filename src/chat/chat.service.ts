@@ -29,10 +29,14 @@ export class ChatService {
     private readonly prisma: PrismaService,
     configService: ConfigService,
   ) {
-    // ✅ OpenRouter Integration
+    // ✅ OpenRouter Integration with required headers
     this.openAI = new OpenAI({
       apiKey: configService.getOrThrow<string>('OPENROUTER_API_KEY'),
-      baseURL: 'https://openrouter.ai/api/v1', // OpenRouter base URL
+      baseURL: 'https://openrouter.ai/api/v1',
+      defaultHeaders: {
+        'HTTP-Referer': 'https://broker-neon-app-1.onrender.com',
+        'X-Title': 'Broker Neon App',
+      },
     });
   }
 
@@ -50,11 +54,9 @@ export class ChatService {
 
     const activeConversation =
       conversation ??
-      (await this.prisma.conversation.create({
-        data: { userId },
-      }));
+      (await this.prisma.conversation.create({ data: { userId } }));
 
-    // Fetch last 15 messages for context
+    // Fetch last 15 messages
     const historyRecords = await this.prisma.message.findMany({
       where: { conversationId: activeConversation.id },
       orderBy: { createdAt: 'desc' },
@@ -69,16 +71,16 @@ export class ChatService {
       }))
       .reverse();
 
-    // Merge inferred filters from natural language prompt
+    // Merge filters
     const normalizedFilters = this.mergeFiltersFromMessage(
       dto.userMessage,
       dto.filters,
     );
 
-    // Fetch filtered listings
+    // Fetch listings and stats
     const { listings, stats } = await this.fetchListings(normalizedFilters);
 
-    // Build chat messages
+    // Build AI prompt
     const messages = buildChatMessages(
       listings,
       history,
@@ -86,15 +88,17 @@ export class ChatService {
       stats,
     );
 
-    // Generate AI response with timeout
+    // Generate AI response
     let assistantMessage: string | undefined;
+
+    // Optional: increase timeout to 30s for production safety
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 15000);
+    const timeoutId = setTimeout(() => controller.abort(), 30000);
 
     try {
       const response = await this.openAI.chat.completions.create(
         {
-          model: 'openai/gpt-4o-mini', // OpenRouter compatible GPT-4o-mini
+          model: 'openai/gpt-4o-mini',
           messages,
           temperature: 0.2,
           max_tokens: 600,
@@ -104,8 +108,18 @@ export class ChatService {
 
       assistantMessage = response.choices[0]?.message?.content?.trim();
     } catch (error) {
-      console.log('Error during OpenRouter completion:', error);
-      
+      this.logger.error(
+        'OpenRouter completion failed',
+        error instanceof Error ? error.stack : String(error),
+      );
+      if (error instanceof Error && error.name === 'AbortError') {
+        throw new InternalServerErrorException(
+          'AI response timed out, please try again.',
+        );
+      }
+      throw new InternalServerErrorException(
+        'Unable to generate response currently',
+      );
     } finally {
       clearTimeout(timeoutId);
     }
@@ -115,7 +129,7 @@ export class ChatService {
       throw new InternalServerErrorException('Failed to generate response');
     }
 
-    // Save both user and assistant messages
+    // Save messages in a transaction
     await this.prisma.$transaction([
       this.prisma.message.create({
         data: {
@@ -147,13 +161,10 @@ export class ChatService {
   ): CreateChatMessageDto['filters'] | undefined {
     const inferredCategory = this.inferCategoryFromMessage(userMessage);
 
-    if (!filters) {
+    if (!filters)
       return inferredCategory ? { category: inferredCategory } : undefined;
-    }
-
-    if (!filters.category && inferredCategory) {
+    if (!filters.category && inferredCategory)
       return { ...filters, category: inferredCategory };
-    }
 
     return filters;
   }
@@ -163,40 +174,29 @@ export class ChatService {
   ): ListingCategory | undefined {
     const text = userMessage.toLowerCase();
 
-    if (/(car|cars|vehicle|vehicles|auto|automobile|suv|truck)/.test(text)) {
+    if (/(car|cars|vehicle|vehicles|auto|automobile|suv|truck)/.test(text))
       return ListingCategory.CAR;
-    }
-
     if (
       /(house|home|homes|villa|apartment|condo|residence|property|properties)/.test(
         text,
       )
-    ) {
+    )
       return ListingCategory.HOUSE;
-    }
-
-    if (/(land|plot|plots|farm|acre|acres|lot|terrain|site)/.test(text)) {
+    if (/(land|plot|plots|farm|acre|acres|lot|terrain|site)/.test(text))
       return ListingCategory.LAND;
-    }
-
     if (
       /(machine|machines|equipment|tractor|bulldozer|excavator|loader|plant)/.test(
         text,
       )
-    ) {
+    )
       return ListingCategory.MACHINE;
-    }
 
     return undefined;
   }
 
-  // Fetch filtered listings
   private async fetchListings(
     filters?: CreateChatMessageDto['filters'],
-  ): Promise<{
-    listings: Listing[];
-    stats: ListingStatsSummary;
-  }> {
+  ): Promise<{ listings: Listing[]; stats: ListingStatsSummary }> {
     const categories: ListingCategory[] = [
       ListingCategory.CAR,
       ListingCategory.HOUSE,
@@ -207,9 +207,7 @@ export class ChatService {
     const activeCounts = await this.prisma.listing.groupBy({
       by: ['category'],
       where: { status: ListingStatus.ACTIVE },
-      _count: {
-        _all: true,
-      },
+      _count: { _all: true },
     });
 
     const stats: ListingStatsSummary = {
@@ -229,29 +227,18 @@ export class ChatService {
       ),
     };
 
-    const where: Prisma.ListingWhereInput = {
-      status: ListingStatus.ACTIVE,
-    };
+    const where: Prisma.ListingWhereInput = { status: ListingStatus.ACTIVE };
 
-    if (filters?.category) {
-      where.category = filters.category;
-    }
-
-    if (filters?.status) {
-      where.status = filters.status;
-    }
-
-    if (filters?.province) {
+    if (filters?.category) where.category = filters.category;
+    if (filters?.status) where.status = filters.status;
+    if (filters?.province)
       where.province = { contains: filters.province, mode: 'insensitive' };
-    }
-
     if (filters?.minPrice !== undefined || filters?.maxPrice !== undefined) {
       const priceFilter: Prisma.FloatNullableFilter = {};
       if (filters.minPrice !== undefined) priceFilter.gte = filters.minPrice;
       if (filters.maxPrice !== undefined) priceFilter.lte = filters.maxPrice;
       where.price = priceFilter;
     }
-
     if (filters?.search) {
       where.OR = [
         { title: { contains: filters.search, mode: 'insensitive' } },
@@ -277,12 +264,10 @@ export class ChatService {
           }),
         ),
       );
-
       return { listings: grouped.flat(), stats };
     }
 
     const take = filters?.limit ?? 12;
-
     const listings = await this.prisma.listing.findMany({
       where,
       take,
